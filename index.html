@@ -359,7 +359,7 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
       <div class="pills">
         <span class="pill">9 AI levels</span><span class="pill">Web-Worker search</span>
         <span class="pill">Proven M# mates</span><span class="pill">Live evaluation</span>
-        <span class="pill">30s / 60s / ∞ budgets</span>
+        <span class="pill">30s / 60s budgets</span>
       </div>
     </div>
     <div class="modegrid">
@@ -576,7 +576,7 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
         <div class="set-row"><div><div class="label">Time control</div><div class="hint">Real search budget for engine moves and analysis.</div></div>
           <div class="seg" id="timeSeg" role="group" aria-label="Time control">
             <button data-v="1000">1s</button><button data-v="5000">5s</button>
-            <button data-v="30000">30s</button><button data-v="60000">60s</button><button data-v="0">∞</button>
+            <button data-v="30000">30s</button><button data-v="60000">60s</button>
           </div></div>
         <div class="set-row"><div><div class="label">Auto analysis</div><div class="hint">Analyse every position as it appears</div></div><button class="switch" id="swAuto" role="switch"></button></div>
         <div class="set-row"><div><div class="label">Evaluation bar</div></div><button class="switch" id="swEval" role="switch"></button></div>
@@ -1091,9 +1091,7 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
     this.root = player;
     this.opts = opts || {};
     this.tt = opts && opts.tt ? opts.tt : new TT();
-    var isInf = this.opts.timeMs === 0 || this.opts.timeMs === Infinity || this.opts.infinite === true;
-    this.isInfinite = isInf;
-    this.deadline = isInf ? null : Date.now() + (this.opts.timeMs || 1000);
+    this.deadline = Date.now() + (this.opts.timeMs || 1000);
     this.nodes = 0;
     this.aborted = false;
     this.killers = [];
@@ -1102,15 +1100,11 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
 
   Search.prototype.timeUp = function () {
     if (this.aborted) return true;
-    if (this.opts.shouldAbort && (this.nodes & 63) === 0 && this.opts.shouldAbort()) {
+    if ((this.nodes & 511) === 0 && Date.now() > this.deadline) {
       this.aborted = true;
       return true;
     }
-    if (this.deadline !== null && (this.nodes & 511) === 0 && Date.now() > this.deadline) {
-      this.aborted = true;
-      return true;
-    }
-    return this.aborted;
+    return false;
   };
 
   Search.prototype.width = function (depth) {
@@ -1268,7 +1262,7 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
     this.reached = 0;
     this.bestPV = [this.bestMove];
     this.rootScores = {};
-    this.maxDepth = this.opts.maxDepth || (this.isInfinite ? 40 : 6);
+    this.maxDepth = this.opts.maxDepth || 6;
     this.iterLog = [];
     return undefined;
   };
@@ -1321,12 +1315,9 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
   };
 
   Search.prototype.isDone = function () {
-    if (this.aborted || (this.opts.shouldAbort && this.opts.shouldAbort())) {
-      this.aborted = true;
-      return true;
-    }
+    if (this.aborted) return true;
     if (Math.abs(this.bestScore) >= MATE_T) return true;
-    if (this.deadline !== null && Date.now() > this.deadline) return true;
+    if (Date.now() > this.deadline) return true;
     return false;
   };
 
@@ -1421,13 +1412,9 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
     return o;
   }
 
-  function chooseMove(state, player, level, timeMs, onProgress, shouldAbort, async) {
+  function chooseMove(state, player, level, timeMs, onProgress) {
     var o = withTime(level, timeMs);
     o.onProgress = onProgress;
-    if (shouldAbort) o.shouldAbort = shouldAbort;
-    if (o.timeMs === 0 || o.timeMs === Infinity) {
-      o.maxDepth = Math.max(o.maxDepth || 14, 40);
-    }
     var s = new Search(state, player, o);
     function format(res) {
       if (!res) return null;
@@ -1440,44 +1427,33 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
       }
       return res;
     }
-    if (async) {
-      return s.runAsync().then(format);
-    }
     return format(s.run());
   }
 
   /* Analysis: returns O-positive score plus engine telemetry. */
   function analyse(state, sideToMove, opts) {
     opts = opts || {};
-    var isInf = opts.timeMs === 0 || opts.timeMs === Infinity || opts.infinite === true;
-    var budget = isInf ? 0 : (opts.timeMs || 1000);
-    // long budgets (30s/60s/Infinite) get a much higher depth ceiling so the
+    var budget = opts.timeMs || 1000;
+    // long budgets (30s/60s) get a much higher depth ceiling so the
     // time limit -- not an arbitrary maxDepth -- is what stops the search
-    var autoDepth = isInf ? 40 : (budget >= 20000 ? 40 : budget >= 8000 ? 22 : budget >= 3000 ? 16 : 12);
+    var autoDepth = budget >= 20000 ? 40 : budget >= 8000 ? 22 : budget >= 3000 ? 16 : 12;
     var o = {
       maxDepth: opts.maxDepth || autoDepth,
       width: opts.width || 10,
       rootWidth: opts.rootWidth || 12,
-      timeMs: isInf ? 0 : budget,
+      timeMs: budget,
       vcf: opts.vcf !== false, vct: !!opts.vct, maxExt: 4,
-      onProgress: opts.onProgress,
-      shouldAbort: opts.shouldAbort
+      onProgress: opts.onProgress
     };
     var s = new Search(state, sideToMove, o);
     function format(res) {
       if (!res) return { score: 0, best: null, mateIn: null, depth: 0, nodes: 0, timeMs: 0, pv: [], candidates: [], iters: [] };
-      /* External convention (per product spec): POSITIVE = advantage for X, regardless of
-         who is to move. res.score is negamax-native: positive = good for `sideToMove`.
-         Convert: if sideToMove is X, res.score is already X-positive (flip=+1);
-         if sideToMove is O, res.score is O-positive, so flip=-1 to make it X-positive. */
       var flip = sideToMove === X ? 1 : -1;
       return {
         score: res.score * flip,
         rawScore: res.score,
         best: res.idx,
         mateIn: res.mateIn,
-        /* mateFor is computed from the raw (perspective-relative) score, independent of the
-           external sign convention, so it is not affected by the flip above. */
         mateFor: res.mateIn ? (res.score > 0 ? sideToMove : (sideToMove === X ? O : X)) : null,
         depth: res.depth, nodes: res.nodes, timeMs: res.timeMs,
         ttHits: res.ttHits, ttProbes: res.ttProbes,
@@ -1486,9 +1462,6 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
         candidates: res.candidates.map(function (c) { return { idx: c.idx, score: c.score * flip }; }),
         iters: (res.iters || []).map(function (it) { return { depth: it.depth, score: it.score * flip, best: it.best, nodes: it.nodes, timeMs: it.timeMs, pv: it.pv }; })
       };
-    }
-    if (opts.async) {
-      return s.runAsync().then(format);
     }
     return format(s.run());
   }
@@ -1918,22 +1891,14 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
     }
     WK.inflight = 0;
   }
-  /* Cancellation uses a two-phase approach:
-     1) Cooperative: send type:'cancel' to the worker so the running search's
-        shouldAbort() returns true and it unwinds cleanly after the current
-        depth. This is enough for almost all cases.
-     2) Safety fallback: always terminate+respawn the worker too, so that if
-        the search is stuck in a truly synchronous tight loop it is forcibly
-        stopped. This is the same terminate+respawn as before, applied
-        unconditionally as a backstop. */
+  /* Simple cancellation: terminate+respawn the worker. Any in-flight promise
+     is rejected with {cancelled:true} and the generation counter prevents late
+     messages from the dead worker from resolving anything. */
   function cancelAllSearches(reason) {
     WK.gen++;
     aiPending = false;
     failAllPending(reason || 'cancelled');
     if (WK.worker) {
-      /* Phase 1: cooperative — worker's shouldAbort() will return true */
-      try { WK.worker.postMessage({ type: 'cancel', id: WK.seq }); } catch (e) {}
-      /* Phase 2: terminate+respawn as an unconditional safety backstop */
       try { WK.worker.terminate(); } catch (e) {}
       WK.worker = null;
       initWorker();
@@ -1983,34 +1948,14 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
   }
   function rootPayload() { return G && G.root ? Array.prototype.slice.call(G.root) : null; }
 
-  /* time budget:
-     S.timeMs === 0 means the player chose "Infinite" time control.
-
-     aiBudget()      — used for AI *move* selection in Play AI mode.
-                       Even in Infinite mode the AI must eventually pick a move;
-                       we give it a generous 30s so it plays at high depth but
-                       still terminates.  Stop button (cooperative cancel +
-                       terminate) works at any time.
-
-     analysisBudget() — used for the Analysis panel continuous search.
-                        In Infinite mode we pass timeMs: 0 to the engine which
-                        means "search until Stop is pressed".  This is safe
-                        because analysis runs in a worker and the Stop button
-                        terminates the worker. */
-  var INFINITE_MS = 3600000;           // display-only constant
-  var AI_INFINITE_MS = 30000;          // 30 s for AI move in Infinite mode
+  /* time budget: the selected time control IS the search budget. */
   function analysisBudget() {
-    if (S.timeMs === 0) return 0;       // 0 = true infinite to the engine
     /* smart budget: quiet openings do not need the full allowance */
     var stones = countStones();
     if (stones <= 2 && S.timeMs > 2000) return Math.max(600, Math.round(S.timeMs * 0.25));
     return S.timeMs;
   }
   function aiBudget() {
-    /* Infinite time control: AI still needs to terminate and play a move.
-       Use a generous 30 s budget — it reaches depth 12+ which is very strong.
-       The Stop button can cut this short at any time. */
-    if (S.timeMs === 0) return AI_INFINITE_MS;
     return S.timeMs;
   }
   function countStones() {
@@ -2018,7 +1963,6 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
     if (G && G.root) for (var i = 0; i < LEN; i++) if (G.root[i]) n++;
     return n;
   }
-  function isInfinite() { return S.timeMs === 0; }
 
   /* ---------------- analysis cache ---------------- */
   var cache = new Map();
@@ -2308,11 +2252,6 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
   }
 
   function scheduleAnalysis(force) {
-    /* Never queue an analysis while the AI is computing a move — both compete
-       for the same worker and the infinite analysis would block the AI forever.
-       Analysis is rescheduled automatically once the AI plays (place() calls
-       scheduleAnalysis() again after the AI move lands). */
-    if (aiPending && !force) return;
     if (analysisTimer) clearTimeout(analysisTimer);
     analysisTimer = setTimeout(function () { runAnalysis(force); }, 80);
   }
@@ -2320,9 +2259,6 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
   function runAnalysis(force, overrideMs) {
     if (!G || G.editing) return;
     if (!S.auto && !force) { setEngineStatus('Auto analysis off'); return; }
-    /* Don't run analysis while the AI is thinking: they share one worker and
-       an infinite analysis request would block the AI move indefinitely. */
-    if (aiPending && !force) return;
     var key = posKey(G.view), tok = ++analysisToken;
     var b = boardAt(G.view);
     if (G.status !== 'playing' && G.view === line().length) {
@@ -2342,7 +2278,7 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
     var t0 = Date.now();
     lastProgress = null;
     setSearching(true);
-    setEngineStatus(isInfinite() && !overrideMs ? 'Searching (infinite — press Stop)…' : 'Searching…');
+    setEngineStatus('Searching…');
     STATS.analyses++;
 
     ask({
@@ -2390,7 +2326,7 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
     if (S.evalBar) setEvalDisplay(res);
     showEngineInfo(res, true);
     renderPosition();
-    var frac = budget && budget < INFINITE_MS ? clamp((Date.now() - t0) / budget, 0, 1) : ((p.depth % 10) / 10);
+    var frac = budget ? clamp((Date.now() - t0) / budget, 0, 1) : ((p.depth % 10) / 10);
     $('searchProgFill').style.width = (frac * 100).toFixed(0) + '%';
     $('thinkDepth').textContent = 'depth ' + p.depth;
     setEngineStatus('Depth ' + p.depth + ' complete · ' + (p.nodes || 0).toLocaleString() + ' nodes — searching deeper…');
@@ -2708,15 +2644,14 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
     var moves = movesUpTo(G.view), root = rootPayload();
     lastProgress = null;
     setSearching(true, '<span class="dots"><i></i><i></i><i></i></span>');
-    setEngineStatus('AI thinking at level ' + G.level + ' (' + (isInfinite() ? '∞' : (budget / 1000).toFixed(1) + 's') + ' budget)…');
+    setEngineStatus('AI thinking at level ' + G.level + ' (' + (budget / 1000).toFixed(1) + 's budget)…');
     var t0 = Date.now();
     ask({ type: 'move', moves: moves, root: root, side: side, level: G.level, timeMs: budget },
       function (p) {
         if (tok !== aiToken) return;
         lastProgress = p;
         $('thinkDepth').textContent = 'depth ' + p.depth;
-        /* Infinite mode: fill bar to 100% (pulsing animation shows activity) */
-        $('searchProgFill').style.width = (isInfinite() ? 100 : clamp((Date.now() - t0) / budget, 0, 1) * 100).toFixed(0) + '%';
+        $('searchProgFill').style.width = (clamp((Date.now() - t0) / budget, 0, 1) * 100).toFixed(0) + '%';
       }
 
 
@@ -2724,11 +2659,11 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
       aiPending = false;
       if (tok !== aiToken) return;                    // stale AI result: MUST NOT move
       setSearching(false);
-      if (!res || res.idx == null) { setEngineStatus('AI found no move.'); scheduleAnalysis(); return; }
-      if (!aiToMove()) { scheduleAnalysis(); return; }  // position changed underneath us
+      if (!res || res.idx == null) { setEngineStatus('AI found no move.'); return; }
+      if (!aiToMove()) return;                        // position changed underneath us
       G.lastAiMs = Date.now() - t0;
       setEngineStatus('AI played ' + nm(res.idx) + ' — depth ' + res.depth + ', ' + (res.nodes || 0).toLocaleString() + ' nodes');
-      place(res.idx, side);   // place() calls scheduleAnalysis() internally
+      place(res.idx, side);
     }).catch(function (err) {
       aiPending = false;
       if (tok !== aiToken) return;
@@ -2930,8 +2865,8 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
   };
   $('deepBtn').onclick = function () {
     STATS.deepAnalyses++; store('stats3', STATS);
-    var budget = isInfinite() ? INFINITE_MS : Math.max(15000, S.timeMs * 2);
-    toast(isInfinite() ? 'Deep analysis (infinite — press Stop)' : 'Deep analysis: ' + (budget / 1000) + 's');
+    var budget = Math.max(15000, S.timeMs * 2);
+    toast('Deep analysis: ' + (budget / 1000) + 's');
     runAnalysis(true, budget);
     checkAchievements(null);
   };

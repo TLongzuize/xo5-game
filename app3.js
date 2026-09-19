@@ -216,22 +216,14 @@
     }
     WK.inflight = 0;
   }
-  /* Cancellation uses a two-phase approach:
-     1) Cooperative: send type:'cancel' to the worker so the running search's
-        shouldAbort() returns true and it unwinds cleanly after the current
-        depth. This is enough for almost all cases.
-     2) Safety fallback: always terminate+respawn the worker too, so that if
-        the search is stuck in a truly synchronous tight loop it is forcibly
-        stopped. This is the same terminate+respawn as before, applied
-        unconditionally as a backstop. */
+  /* Simple cancellation: terminate+respawn the worker. Any in-flight promise
+     is rejected with {cancelled:true} and the generation counter prevents late
+     messages from the dead worker from resolving anything. */
   function cancelAllSearches(reason) {
     WK.gen++;
     aiPending = false;
     failAllPending(reason || 'cancelled');
     if (WK.worker) {
-      /* Phase 1: cooperative — worker's shouldAbort() will return true */
-      try { WK.worker.postMessage({ type: 'cancel', id: WK.seq }); } catch (e) {}
-      /* Phase 2: terminate+respawn as an unconditional safety backstop */
       try { WK.worker.terminate(); } catch (e) {}
       WK.worker = null;
       initWorker();
@@ -281,34 +273,14 @@
   }
   function rootPayload() { return G && G.root ? Array.prototype.slice.call(G.root) : null; }
 
-  /* time budget:
-     S.timeMs === 0 means the player chose "Infinite" time control.
-
-     aiBudget()      — used for AI *move* selection in Play AI mode.
-                       Even in Infinite mode the AI must eventually pick a move;
-                       we give it a generous 30s so it plays at high depth but
-                       still terminates.  Stop button (cooperative cancel +
-                       terminate) works at any time.
-
-     analysisBudget() — used for the Analysis panel continuous search.
-                        In Infinite mode we pass timeMs: 0 to the engine which
-                        means "search until Stop is pressed".  This is safe
-                        because analysis runs in a worker and the Stop button
-                        terminates the worker. */
-  var INFINITE_MS = 3600000;           // display-only constant
-  var AI_INFINITE_MS = 30000;          // 30 s for AI move in Infinite mode
+  /* time budget: the selected time control IS the search budget. */
   function analysisBudget() {
-    if (S.timeMs === 0) return 0;       // 0 = true infinite to the engine
     /* smart budget: quiet openings do not need the full allowance */
     var stones = countStones();
     if (stones <= 2 && S.timeMs > 2000) return Math.max(600, Math.round(S.timeMs * 0.25));
     return S.timeMs;
   }
   function aiBudget() {
-    /* Infinite time control: AI still needs to terminate and play a move.
-       Use a generous 30 s budget — it reaches depth 12+ which is very strong.
-       The Stop button can cut this short at any time. */
-    if (S.timeMs === 0) return AI_INFINITE_MS;
     return S.timeMs;
   }
   function countStones() {
@@ -316,7 +288,6 @@
     if (G && G.root) for (var i = 0; i < LEN; i++) if (G.root[i]) n++;
     return n;
   }
-  function isInfinite() { return S.timeMs === 0; }
 
   /* ---------------- analysis cache ---------------- */
   var cache = new Map();
@@ -606,11 +577,6 @@
   }
 
   function scheduleAnalysis(force) {
-    /* Never queue an analysis while the AI is computing a move — both compete
-       for the same worker and the infinite analysis would block the AI forever.
-       Analysis is rescheduled automatically once the AI plays (place() calls
-       scheduleAnalysis() again after the AI move lands). */
-    if (aiPending && !force) return;
     if (analysisTimer) clearTimeout(analysisTimer);
     analysisTimer = setTimeout(function () { runAnalysis(force); }, 80);
   }
@@ -618,9 +584,6 @@
   function runAnalysis(force, overrideMs) {
     if (!G || G.editing) return;
     if (!S.auto && !force) { setEngineStatus('Auto analysis off'); return; }
-    /* Don't run analysis while the AI is thinking: they share one worker and
-       an infinite analysis request would block the AI move indefinitely. */
-    if (aiPending && !force) return;
     var key = posKey(G.view), tok = ++analysisToken;
     var b = boardAt(G.view);
     if (G.status !== 'playing' && G.view === line().length) {
@@ -640,7 +603,7 @@
     var t0 = Date.now();
     lastProgress = null;
     setSearching(true);
-    setEngineStatus(isInfinite() && !overrideMs ? 'Searching (infinite — press Stop)…' : 'Searching…');
+    setEngineStatus('Searching…');
     STATS.analyses++;
 
     ask({
@@ -688,7 +651,7 @@
     if (S.evalBar) setEvalDisplay(res);
     showEngineInfo(res, true);
     renderPosition();
-    var frac = budget && budget < INFINITE_MS ? clamp((Date.now() - t0) / budget, 0, 1) : ((p.depth % 10) / 10);
+    var frac = budget ? clamp((Date.now() - t0) / budget, 0, 1) : ((p.depth % 10) / 10);
     $('searchProgFill').style.width = (frac * 100).toFixed(0) + '%';
     $('thinkDepth').textContent = 'depth ' + p.depth;
     setEngineStatus('Depth ' + p.depth + ' complete · ' + (p.nodes || 0).toLocaleString() + ' nodes — searching deeper…');
@@ -1006,15 +969,14 @@
     var moves = movesUpTo(G.view), root = rootPayload();
     lastProgress = null;
     setSearching(true, '<span class="dots"><i></i><i></i><i></i></span>');
-    setEngineStatus('AI thinking at level ' + G.level + ' (' + (isInfinite() ? '∞' : (budget / 1000).toFixed(1) + 's') + ' budget)…');
+    setEngineStatus('AI thinking at level ' + G.level + ' (' + (budget / 1000).toFixed(1) + 's budget)…');
     var t0 = Date.now();
     ask({ type: 'move', moves: moves, root: root, side: side, level: G.level, timeMs: budget },
       function (p) {
         if (tok !== aiToken) return;
         lastProgress = p;
         $('thinkDepth').textContent = 'depth ' + p.depth;
-        /* Infinite mode: fill bar to 100% (pulsing animation shows activity) */
-        $('searchProgFill').style.width = (isInfinite() ? 100 : clamp((Date.now() - t0) / budget, 0, 1) * 100).toFixed(0) + '%';
+        $('searchProgFill').style.width = (clamp((Date.now() - t0) / budget, 0, 1) * 100).toFixed(0) + '%';
       }
 
 
@@ -1022,11 +984,11 @@
       aiPending = false;
       if (tok !== aiToken) return;                    // stale AI result: MUST NOT move
       setSearching(false);
-      if (!res || res.idx == null) { setEngineStatus('AI found no move.'); scheduleAnalysis(); return; }
-      if (!aiToMove()) { scheduleAnalysis(); return; }  // position changed underneath us
+      if (!res || res.idx == null) { setEngineStatus('AI found no move.'); return; }
+      if (!aiToMove()) return;                        // position changed underneath us
       G.lastAiMs = Date.now() - t0;
       setEngineStatus('AI played ' + nm(res.idx) + ' — depth ' + res.depth + ', ' + (res.nodes || 0).toLocaleString() + ' nodes');
-      place(res.idx, side);   // place() calls scheduleAnalysis() internally
+      place(res.idx, side);
     }).catch(function (err) {
       aiPending = false;
       if (tok !== aiToken) return;
@@ -1228,8 +1190,8 @@
   };
   $('deepBtn').onclick = function () {
     STATS.deepAnalyses++; store('stats3', STATS);
-    var budget = isInfinite() ? INFINITE_MS : Math.max(15000, S.timeMs * 2);
-    toast(isInfinite() ? 'Deep analysis (infinite — press Stop)' : 'Deep analysis: ' + (budget / 1000) + 's');
+    var budget = Math.max(15000, S.timeMs * 2);
+    toast('Deep analysis: ' + (budget / 1000) + 's');
     runAnalysis(true, budget);
     checkAchievements(null);
   };
