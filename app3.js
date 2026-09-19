@@ -75,13 +75,32 @@
   var ACH = load('ach3', {});
   var SESSION = { x: 0, o: 0, d: 0 };
 
-  /* ---------------- error surface ---------------- */
+  /* ---------------- dev notice & error surface ---------------- */
+  var devNotice = $('devNotice');
+  var devDismiss = $('devDismiss');
+  if (devDismiss && devNotice) {
+    devDismiss.onclick = function () {
+      devNotice.hidden = true;
+      devNotice.style.display = 'none';
+    };
+  }
+
   function showError(msg) {
     var bar = $('errBar'); if (!bar) return;
     $('errText').textContent = msg;
     bar.hidden = false;
+    bar.style.display = 'flex';
   }
-  $('errClose').onclick = function () { $('errBar').hidden = true; };
+  var errClose = $('errClose');
+  if (errClose) {
+    errClose.onclick = function () {
+      var bar = $('errBar');
+      if (bar) {
+        bar.hidden = true;
+        bar.style.display = 'none';
+      }
+    };
+  }
   window.addEventListener('error', function (e) {
     showError('Unexpected error: ' + (e.message || 'unknown') + ' — the app kept running; reload if things look wrong.');
   });

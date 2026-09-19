@@ -314,12 +314,67 @@ textarea.io{width:100%;min-height:140px;border-radius:10px;border:1px solid var(
   padding:10px 16px;border-radius:99px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:all .25s;z-index:80;max-width:88vw;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+/* Global: make sure [hidden] always wins */
+[hidden]{display:none!important}
+
 .kbd{font-family:"Space Grotesk",monospace;font-size:11px;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:5px;padding:1px 5px;color:var(--text-3)}
 .hintline{color:var(--text-3);font-size:11.5px;margin:9px 2px 0}
-.errbar{background:rgba(240,68,56,.12);border:1px solid rgba(240,68,56,.45);color:#B42318;border-radius:10px;padding:9px 12px;font-size:12.5px;margin-bottom:12px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+
+/* ---- dev notice banner (amber/warning, not error-red) ---- */
+.devnotice{
+  background:rgba(247,144,9,.10);
+  border:1px solid rgba(247,144,9,.38);
+  color:#92400E;
+  border-radius:10px;
+  padding:10px 14px;
+  font-size:12.5px;
+  margin-bottom:12px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+html[data-theme="dark"] .devnotice{
+  background:rgba(247,144,9,.12);
+  border-color:rgba(247,144,9,.30);
+  color:#FCD34D;
+}
+.devnotice-text{display:flex;align-items:center;gap:8px;flex:1;min-width:0;font-weight:500;line-height:1.45}
+.devnotice-dismiss{
+  border:1px solid rgba(247,144,9,.45);
+  background:transparent;
+  color:inherit;
+  padding:5px 12px;
+  border-radius:7px;
+  font-size:12px;
+  font-weight:600;
+  cursor:pointer;
+  white-space:nowrap;
+  font-family:inherit;
+  transition:background .14s;
+  flex-shrink:0;
+}
+.devnotice-dismiss:hover{background:rgba(247,144,9,.15)}
+.devnotice-dismiss:focus-visible{outline:2px solid var(--warn);outline-offset:2px}
+html[data-theme="dark"] .devnotice-dismiss{border-color:rgba(252,211,77,.35);color:#FCD34D}
+html[data-theme="dark"] .devnotice-dismiss:hover{background:rgba(252,211,77,.10)}
+
+/* ---- runtime error bar (red — real errors only) ---- */
+.errbar{
+  background:rgba(240,68,56,.12);
+  border:1px solid rgba(240,68,56,.45);
+  color:#B42318;
+  border-radius:10px;
+  padding:9px 12px;
+  font-size:12.5px;
+  margin-bottom:12px;
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:center;
+}
 html[data-theme="dark"] .errbar{color:#FDA29B}
-.devbanner{background:rgba(240,68,56,.09);border-bottom:1px solid rgba(240,68,56,.35);color:#912018;padding:9px 20px;font-size:12.5px;font-weight:500;text-align:center;letter-spacing:.01em;margin:-16px -16px 16px}
-html[data-theme="dark"] .devbanner{background:rgba(240,68,56,.14);color:#FDA29B;border-bottom-color:rgba(240,68,56,.4)}
 
 /* ---- about modal ---- */
 .about-section{margin-bottom:20px}
@@ -332,17 +387,75 @@ html[data-theme="dark"] .devbanner{background:rgba(240,68,56,.14);color:#FDA29B;
 .about-feat .af-title{font-family:"Space Grotesk",sans-serif;font-size:13px;font-weight:700;margin:0 0 4px}
 .about-feat p{font-size:12px;color:var(--text-2);margin:0;line-height:1.5}
 
-/* ---- home feature highlights ---- */
-.feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-top:12px}
-.feat-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;text-align:left}
-.feat-card .fc-icon{font-size:22px;margin-bottom:8px;line-height:1}
-.feat-card h4{font-family:"Space Grotesk",sans-serif;font-size:13.5px;font-weight:700;margin:0 0 5px}
-.feat-card p{font-size:12px;color:var(--text-2);margin:0;line-height:1.55}
+/* ---- home: feature highlight cards (informational, NOT clickable) ---- */
+.home-features-label{
+  font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--text-3);margin:20px 0 10px;
+}
+.feat-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:10px;
+  margin-top:0;
+}
+.feat-card{
+  background:var(--card-2);
+  border:1px solid var(--line);
+  border-left:3px solid var(--line-strong);
+  border-radius:10px;
+  padding:14px 16px;
+  cursor:default;
+  user-select:none;
+}
+.feat-card-head{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  margin-bottom:5px;
+}
+.feat-card .fc-icon{
+  font-size:16px;
+  line-height:1;
+  flex-shrink:0;
+}
+.feat-card h4{
+  font-family:"Space Grotesk",sans-serif;
+  font-size:13px;
+  font-weight:700;
+  margin:0;
+  color:var(--text);
+}
+.feat-card p{
+  font-size:12px;
+  color:var(--text-2);
+  margin:0;
+  line-height:1.55;
+}
 
 /* ---- home how-to-play ---- */
-.howto{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 24px;margin-top:12px}
-.howto h3{font-family:"Space Grotesk",sans-serif;font-size:15px;font-weight:700;margin:0 0 12px}
-.howto ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.howto{
+  background:var(--card-2);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:18px 22px;
+  margin-top:12px;
+}
+.howto h3{
+  font-family:"Space Grotesk",sans-serif;
+  font-size:13px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:var(--text-3);
+  margin:0 0 10px;
+}
+.howto ol{
+  margin:0;
+  padding-left:20px;
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+}
 .howto li{font-size:13px;color:var(--text-2);line-height:1.55}
 </style>
 </head>
@@ -375,11 +488,17 @@ html[data-theme="dark"] .devbanner{background:rgba(240,68,56,.14);color:#FDA29B;
     </div>
   </header>
 
-  <!-- Session-dismissible development notice: visible every page load, no localStorage -->
-  <div id="errBar" class="errbar">
-    <span id="errText">🚧 This website is under active development. Some features may be incomplete or subject to change.</span>
-    <button class="btn sm" id="errClose" aria-label="Dismiss notice">Dismiss</button>
+  <!-- Dev notice: amber/warning style, session-dismissible -->
+  <div id="devNotice" class="devnotice">
+    <span class="devnotice-text">
+      <span aria-hidden="true">🚧</span>
+      <span>Under active development &mdash; some features may be incomplete or subject to change.</span>
+    </span>
+    <button class="devnotice-dismiss" id="devDismiss" type="button" aria-label="Dismiss development notice">Dismiss</button>
   </div>
+
+  <!-- Runtime error bar (hidden by default, shown only on JS errors) -->
+  <div id="errBar" class="errbar" hidden><span id="errText"></span><button class="btn sm" id="errClose" aria-label="Dismiss error">Dismiss</button></div>
 
   <!-- ===================== HOME ===================== -->
   <section class="view" id="viewHome" aria-label="Home">
@@ -426,37 +545,32 @@ html[data-theme="dark"] .devbanner{background:rgba(240,68,56,.14);color:#FDA29B;
       </button>
     </div>
 
-    <!-- Engine & analysis feature highlights (distinct from mode cards above) -->
+    <!-- Engine & analysis feature highlights (informational — not clickable) -->
+    <p class="home-features-label">What’s inside</p>
     <div class="feat-grid">
       <div class="feat-card">
-        <div class="fc-icon">📊</div>
-        <h4>Live Evaluation Bar</h4>
+        <div class="feat-card-head"><span class="fc-icon">📊</span><h4>Live Evaluation Bar</h4></div>
         <p>A graphical bar updates in real time, showing who has the advantage as the engine thinks.</p>
       </div>
       <div class="feat-card">
-        <div class="fc-icon">✨</div>
-        <h4>Best-Move Suggestions</h4>
-        <p>The engine highlights its top choice directly on the board with a visual arrow.</p>
+        <div class="feat-card-head"><span class="fc-icon">✦</span><h4>Best-Move Suggestions</h4></div>
+        <p>The engine marks its top choice on the board with a visual arrow after each search.</p>
       </div>
       <div class="feat-card">
-        <div class="fc-icon">⏱️</div>
-        <h4>Flexible Time Controls</h4>
-        <p>Choose 1s, 5s, 30s, 60s — or ∞ to search indefinitely and stop whenever you like.</p>
+        <div class="feat-card-head"><span class="fc-icon">⏱</span><h4>Flexible Time Controls</h4></div>
+        <p>Choose 1s, 5s, 30s, 60s &mdash; or &infin; to search indefinitely and stop whenever you like.</p>
       </div>
       <div class="feat-card">
-        <div class="fc-icon">🔢</div>
-        <h4>Proven M# Mates</h4>
-        <p>Forced wins are verified by a dedicated tactical solver and displayed as M1, M2…</p>
+        <div class="feat-card-head"><span class="fc-icon">✓</span><h4>Proven M# Mates</h4></div>
+        <p>Forced wins are verified by a dedicated tactical solver and shown as M1, M2&hellip;</p>
       </div>
       <div class="feat-card">
-        <div class="fc-icon">🔎</div>
-        <h4>Candidate Moves</h4>
-        <p>The top candidate squares are ranked by score so you can compare the engine’s options.</p>
+        <div class="feat-card-head"><span class="fc-icon">≡</span><h4>Candidate Moves</h4></div>
+        <p>Top candidate squares are ranked by score so you can see the engine’s full shortlist.</p>
       </div>
       <div class="feat-card">
-        <div class="fc-icon">📉</div>
-        <h4>Move Quality Labels</h4>
-        <p>Moves are graded Best, Good, Inaccuracy, or Blunder based on the engine’s evaluation shift.</p>
+        <div class="feat-card-head"><span class="fc-icon">△</span><h4>Move Quality</h4></div>
+        <p>Moves are graded Best, Good, Inaccuracy, or Blunder based on evaluation shift.</p>
       </div>
     </div>
 
@@ -464,16 +578,16 @@ html[data-theme="dark"] .devbanner{background:rgba(240,68,56,.14);color:#FDA29B;
     <div class="howto">
       <h3>How to Play</h3>
       <ol>
-        <li>X always moves first. Players alternate placing their mark on an empty intersection.</li>
-        <li>The goal is to place five consecutive marks in a row — horizontally, vertically, or diagonally.</li>
-        <li>Block your opponent's threats before they complete their line.</li>
-        <li>The first player to make five in a row wins. A full board with no five is a draw.</li>
+        <li>X always moves first. Players alternate placing their mark on any empty intersection.</li>
+        <li>Build five consecutive marks in a row &mdash; horizontally, vertically, or diagonally.</li>
+        <li>Block your opponent’s threats before they complete their line.</li>
+        <li>First to five wins. A completely full board with no five is a draw.</li>
       </ol>
     </div>
 
-    <!-- Footer with About link -->
+    <!-- Footer: About link -->
     <p style="text-align:center;margin-top:20px;font-size:12px;color:var(--text-3)">
-      <button class="btn ghost" style="font-size:12px;padding:6px 10px;color:var(--text-3)" id="aboutBtn" aria-haspopup="dialog">About this web ›</button>
+      <button class="btn ghost" style="font-size:12px;padding:6px 10px;color:var(--text-3)" id="aboutBtn" aria-haspopup="dialog">About this web &rsaquo;</button>
     </p>
   </section>
 
