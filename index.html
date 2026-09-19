@@ -2068,7 +2068,7 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
       snapshots: [],
       clock: { 1: S.clock * 60000, 2: S.clock * 60000 },
       startTime: Date.now(), lastAiMs: null,
-      rootEval: null
+      rootEval: root ? null : 0
     };
   }
 
@@ -2705,6 +2705,7 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
     if (S.evalBar) setEvalDisplay(res);
     showEngineInfo(res, true);
     renderPosition();
+    if (S.graph) refreshGraph();
     if (!aiSearching) {
       var frac = budget ? clamp((Date.now() - t0) / budget, 0, 1) : ((p.depth % 10) / 10);
       $('searchProgFill').style.width = (frac * 100).toFixed(0) + '%';
@@ -2731,12 +2732,12 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
     if (res && res.mateIn != null && G.mode === 'ai' && res.mateFor === G.humanSide) G.sawForcedWin = true;
     // record the engine's verdict for the position reached after the last move
     var L = line();
-    if (fresh && G.view > 0 && L[G.view - 1] && !G.variation && !G.whatIf) {
+    if (fresh && G.view > 0 && L[G.view - 1] && !G.whatIf) {
       L[G.view - 1].evalAfter = res.score;
       gradeMove(G.view - 1);
       refreshMoves(); refreshGraph();
     }
-    if (fresh && G.view === 0 && !G.variation) G.rootEval = res.score;
+    if (fresh && G.view === 0) G.rootEval = res.score;
     // remember the best move at this position so the NEXT move can be graded "Best"
     if (fresh && res && res.best != null) bestAtPly[plyKey(G.view)] = res.best;
     renderPosition();
@@ -2750,7 +2751,7 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
   function gradeMove(i) {
     var L = line(), m = L[i];
     if (!m || m.evalAfter == null) return;
-    var before = i > 0 ? (L[i - 1] && L[i - 1].evalAfter) : G.rootEval;
+    var before = i > 0 ? (L[i - 1] && L[i - 1].evalAfter) : (G.rootEval != null ? G.rootEval : (!G.root ? 0 : null));
     if (before == null) { m.quality = null; return; }
     /* Higher score = better for X, always. The loss suffered by the player who
        just moved is therefore simply the drop (X) or rise (O) in the score. */
@@ -2861,16 +2862,37 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
     if (!S.graph || !G) return;
     var g = $('graph'), W = 320, H = 96, pad = 6;
     graphPts = [];
-    if (G.rootEval != null) graphPts.push({ i: 0, v: dp(G.rootEval), m: null });
-    G.main.forEach(function (m, i) { if (m.evalAfter != null) graphPts.push({ i: i + 1, v: dp(m.evalAfter), m: m }); });
-    if (graphPts.length < 2) { g.innerHTML = '<line class="graph-zero" x1="0" y1="48" x2="320" y2="48"/>'; return; }
-    var maxI = Math.max(1, G.main.length);
+    var rootV = G.rootEval != null ? G.rootEval : (!G.root ? 0 : null);
+    if (rootV != null) graphPts.push({ i: 0, v: dp(rootV), m: null });
+    var L = line();
+    L.forEach(function (m, i) {
+      if (m.evalAfter != null) {
+        graphPts.push({ i: i + 1, v: dp(m.evalAfter), m: m });
+      } else if (i + 1 === G.view && current && current.score != null) {
+        graphPts.push({ i: i + 1, v: dp(current.score), m: m });
+      }
+    });
+    if (!G.root && (graphPts.length === 0 || graphPts[0].i !== 0)) {
+      graphPts.unshift({ i: 0, v: 0, m: null });
+    }
+    var maxI = Math.max(1, L.length);
     var xs = function (i) { return pad + i / Math.max(1, maxI) * (W - 2 * pad); };
     var ys = function (v) { return H / 2 - (v / MAXP) * (H / 2 - pad); };      // +X is up
+    if (graphPts.length < 2) {
+      var dot = '';
+      if (graphPts.length === 1 && graphPts[0].i > 0) {
+        var x0 = pad, x1 = W - pad;
+        var y1 = ys(graphPts[0].v);
+        dot = '<line class="graph-line" x1="' + x0 + '" y1="' + (H / 2) + '" x2="' + x1 + '" y2="' + y1.toFixed(1) + '"/>' +
+              '<circle cx="' + x1 + '" cy="' + y1.toFixed(1) + '" r="3" fill="var(--accent)"/>';
+      }
+      g.innerHTML = '<line class="graph-zero" x1="0" y1="' + (H / 2) + '" x2="' + W + '" y2="' + (H / 2) + '"/>' + dot;
+      g._xs = xs;
+      return;
+    }
     var d = graphPts.map(function (p, k) { return (k ? 'L' : 'M') + xs(p.i).toFixed(1) + ' ' + ys(p.v).toFixed(1); }).join(' ');
     var area = d + ' L' + xs(graphPts[graphPts.length - 1].i).toFixed(1) + ' ' + (H / 2) + ' L' + xs(graphPts[0].i).toFixed(1) + ' ' + (H / 2) + ' Z';
-    var cursor = '';
-    if (G.view > 0) cursor = '<line class="graph-cursor" x1="' + xs(G.view).toFixed(1) + '" y1="0" x2="' + xs(G.view).toFixed(1) + '" y2="' + H + '"/>';
+    var cursor = '<line class="graph-cursor" x1="' + xs(G.view).toFixed(1) + '" y1="0" x2="' + xs(G.view).toFixed(1) + '" y2="' + H + '"/>';
     g.innerHTML = '<path class="graph-area" d="' + area + '"/><line class="graph-zero" x1="0" y1="' + (H / 2) + '" x2="' + W + '" y2="' + (H / 2) + '"/>' +
       '<path class="graph-line" d="' + d + '"/>' + cursor;
     g._xs = xs;
