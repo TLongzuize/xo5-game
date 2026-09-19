@@ -431,7 +431,8 @@
     this.root = player;
     this.opts = opts || {};
     this.tt = opts && opts.tt ? opts.tt : new TT();
-    this.deadline = Date.now() + (this.opts.timeMs || 1000);
+    var isInf = this.opts.timeMs === 0 || this.opts.timeMs === Infinity;
+    this.deadline = isInf ? null : (Date.now() + (this.opts.timeMs != null ? this.opts.timeMs : 1000));
     this.nodes = 0;
     this.aborted = false;
     this.killers = [];
@@ -440,7 +441,11 @@
 
   Search.prototype.timeUp = function () {
     if (this.aborted) return true;
-    if ((this.nodes & 511) === 0 && Date.now() > this.deadline) {
+    if (this.deadline !== null && (this.nodes & 511) === 0 && Date.now() > this.deadline) {
+      this.aborted = true;
+      return true;
+    }
+    if (this.opts.shouldAbort && (this.nodes & 63) === 0 && this.opts.shouldAbort()) {
       this.aborted = true;
       return true;
     }
@@ -657,7 +662,8 @@
   Search.prototype.isDone = function () {
     if (this.aborted) return true;
     if (Math.abs(this.bestScore) >= MATE_T) return true;
-    if (Date.now() > this.deadline) return true;
+    if (this.deadline !== null && Date.now() > this.deadline) return true;
+    if (this.opts.shouldAbort && this.opts.shouldAbort()) return true;
     return false;
   };
 
@@ -665,7 +671,7 @@
     r.nodes = this.nodes;
     r.timeMs = Date.now() - (this.t0 || Date.now());
     r.ttHits = this.tt.hits; r.ttProbes = this.tt.probes;
-    r.stoppedByTime = !!this.aborted;
+    r.stoppedByTime = this.deadline !== null && !!this.aborted;
     if (!r.candidates) r.candidates = [];
     if (!r.pv) r.pv = [r.idx];
     return r;
@@ -752,9 +758,10 @@
     return o;
   }
 
-  function chooseMove(state, player, level, timeMs, onProgress) {
+  function chooseMove(state, player, level, timeMs, onProgress, shouldAbort) {
     var o = withTime(level, timeMs);
     o.onProgress = onProgress;
+    o.shouldAbort = shouldAbort;
     var s = new Search(state, player, o);
     function format(res) {
       if (!res) return null;
@@ -773,17 +780,19 @@
   /* Analysis: returns O-positive score plus engine telemetry. */
   function analyse(state, sideToMove, opts) {
     opts = opts || {};
-    var budget = opts.timeMs || 1000;
-    // long budgets (30s/60s) get a much higher depth ceiling so the
+    var isInf = opts.timeMs === 0 || opts.timeMs === Infinity;
+    var budget = isInf ? 0 : (opts.timeMs != null ? opts.timeMs : 1000);
+    // long budgets (30s/60s) or infinite get a much higher depth ceiling so the
     // time limit -- not an arbitrary maxDepth -- is what stops the search
-    var autoDepth = budget >= 20000 ? 40 : budget >= 8000 ? 22 : budget >= 3000 ? 16 : 12;
+    var autoDepth = isInf ? 64 : budget >= 20000 ? 40 : budget >= 8000 ? 22 : budget >= 3000 ? 16 : 12;
     var o = {
       maxDepth: opts.maxDepth || autoDepth,
       width: opts.width || 10,
       rootWidth: opts.rootWidth || 12,
       timeMs: budget,
       vcf: opts.vcf !== false, vct: !!opts.vct, maxExt: 4,
-      onProgress: opts.onProgress
+      onProgress: opts.onProgress,
+      shouldAbort: opts.shouldAbort
     };
     var s = new Search(state, sideToMove, o);
     function format(res) {

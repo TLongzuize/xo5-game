@@ -314,7 +314,8 @@
           var s = new E.State(), i;
           if (payload.root) for (i = 0; i < LEN; i++) if (payload.root[i]) s.play(i, payload.root[i]);
           (payload.moves || []).forEach(function (m) { s.play(m[0], m[1]); });
-          var cap = Math.min(payload.timeMs || 900, 1200), r;
+          var isInf = payload.timeMs === 0 || payload.timeMs === Infinity;
+          var cap = isInf ? 1200 : Math.min(payload.timeMs || 900, 1200), r;
           if (payload.type === 'move') r = E.chooseMove(s, payload.side, payload.level, cap, onProgress);
           else if (payload.type === 'analyse') r = E.analyse(s, payload.side, { timeMs: cap, vct: payload.vct !== false, onProgress: onProgress });
           else if (payload.type === 'threats') r = E.threatMap(s, payload.minLevel || 2);
@@ -688,7 +689,7 @@
       showEngineInfo(null); renderPosition();
       return;
     }
-    if (S.cache && overrideMs === undefined && cache.has(key)) {
+    if (S.cache && !isInfinite() && overrideMs === undefined && cache.has(key)) {
       cancelAnalysis('cached');
       applyAnalysis(cache.get(key), tok, key, false);
       setEngineStatus('Cached — depth ' + (cache.get(key).depth || 0));
@@ -713,12 +714,13 @@
       applyIteration(p, budget, t0);
     }).then(function (res) {
       if (tok !== analysisToken) return;                    // stale result: must never apply
-      if (S.cache) cache.set(key, res);
+      if (S.cache && !isInfinite()) cache.set(key, res);
       setSearching(false);
       applyAnalysis(res, tok, key, true);
       if (!aiSearching) {
+        var extra = res.stoppedByTime ? ' (time limit)' : (res.mateIn != null ? ' (mate found)' : '');
         setEngineStatus('Depth ' + res.depth + ' · ' + (res.nodes || 0).toLocaleString() + ' nodes · ' +
-          ((res.timeMs || 0) / 1000).toFixed(2) + 's' + (res.stoppedByTime ? ' (time limit)' : ''));
+          ((res.timeMs || 0) / 1000).toFixed(2) + 's' + extra);
       }
       searchHistory.unshift({ at: Date.now(), depth: res.depth, score: res.score, nodes: res.nodes, ply: G.view });
       if (searchHistory.length > 8) searchHistory.pop();
