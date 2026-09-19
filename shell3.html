@@ -375,12 +375,11 @@ html[data-theme="dark"] .devbanner{background:rgba(240,68,56,.14);color:#FDA29B;
     </div>
   </header>
 
-  <!-- Development notice — shown every page load, no dismiss button, no persistent state -->
-  <div class="devbanner" id="devBanner" role="status" aria-live="polite">
-    🚧 This website is under active development. Some features may be incomplete or subject to change.
+  <!-- Session-dismissible development notice: visible every page load, no localStorage -->
+  <div id="errBar" class="errbar">
+    <span id="errText">🚧 This website is under active development. Some features may be incomplete or subject to change.</span>
+    <button class="btn sm" id="errClose" aria-label="Dismiss notice">Dismiss</button>
   </div>
-
-  <div id="errBar" class="errbar" hidden><span id="errText"></span><button class="btn sm" id="errClose">Dismiss</button></div>
 
   <!-- ===================== HOME ===================== -->
   <section class="view" id="viewHome" aria-label="Home">
@@ -427,37 +426,37 @@ html[data-theme="dark"] .devbanner{background:rgba(240,68,56,.14);color:#FDA29B;
       </button>
     </div>
 
-    <!-- Feature highlights -->
+    <!-- Engine & analysis feature highlights (distinct from mode cards above) -->
     <div class="feat-grid">
       <div class="feat-card">
-        <div class="fc-icon">🤖</div>
-        <h4>9 AI Levels</h4>
-        <p>From casual to tactically demanding. Each level adjusts search depth and move quality.</p>
-      </div>
-      <div class="feat-card">
         <div class="fc-icon">📊</div>
-        <h4>Deep Analysis</h4>
-        <p>Iterative-deepening search with evaluation bar, best-move arrows, PV, and candidates.</p>
+        <h4>Live Evaluation Bar</h4>
+        <p>A graphical bar updates in real time, showing who has the advantage as the engine thinks.</p>
       </div>
       <div class="feat-card">
-        <div class="fc-icon">♾️</div>
+        <div class="fc-icon">✨</div>
+        <h4>Best-Move Suggestions</h4>
+        <p>The engine highlights its top choice directly on the board with a visual arrow.</p>
+      </div>
+      <div class="feat-card">
+        <div class="fc-icon">⏱️</div>
         <h4>Flexible Time Controls</h4>
-        <p>Set a budget of 1s, 5s, 30s, 60s, or run indefinitely with the ∞ mode.</p>
+        <p>Choose 1s, 5s, 30s, 60s — or ∞ to search indefinitely and stop whenever you like.</p>
       </div>
       <div class="feat-card">
-        <div class="fc-icon">🎯</div>
-        <h4>Forced-Win Detection</h4>
-        <p>The engine proves forced wins (M1, M2 …) and displays them as verified results.</p>
+        <div class="fc-icon">🔢</div>
+        <h4>Proven M# Mates</h4>
+        <p>Forced wins are verified by a dedicated tactical solver and displayed as M1, M2…</p>
       </div>
       <div class="feat-card">
-        <div class="fc-icon">🧩</div>
-        <h4>Puzzles</h4>
-        <p>Tactical positions with engine-verified solutions. Find the winning move.</p>
+        <div class="fc-icon">🔎</div>
+        <h4>Candidate Moves</h4>
+        <p>The top candidate squares are ranked by score so you can compare the engine’s options.</p>
       </div>
       <div class="feat-card">
-        <div class="fc-icon">👥</div>
-        <h4>Local Multiplayer</h4>
-        <p>Pass-and-play on the same device. Undo, analysis, and history all work.</p>
+        <div class="fc-icon">📉</div>
+        <h4>Move Quality Labels</h4>
+        <p>Moves are graded Best, Good, Inaccuracy, or Blunder based on the engine’s evaluation shift.</p>
       </div>
     </div>
 
