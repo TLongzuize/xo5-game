@@ -359,7 +359,7 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
       <div class="pills">
         <span class="pill">9 AI levels</span><span class="pill">Web-Worker search</span>
         <span class="pill">Proven M# mates</span><span class="pill">Live evaluation</span>
-        <span class="pill">30s / 60s budgets</span>
+        <span class="pill">30s / 60s / ∞ budgets</span>
       </div>
     </div>
     <div class="modegrid">
@@ -577,6 +577,7 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
           <div class="seg" id="timeSeg" role="group" aria-label="Time control">
             <button data-v="1000">1s</button><button data-v="5000">5s</button>
             <button data-v="30000">30s</button><button data-v="60000">60s</button>
+            <button data-v="0">∞</button>
           </div></div>
         <div class="set-row"><div><div class="label">Auto analysis</div><div class="hint">Analyse every position as it appears</div></div><button class="switch" id="swAuto" role="switch"></button></div>
         <div class="set-row"><div><div class="label">Evaluation bar</div></div><button class="switch" id="swEval" role="switch"></button></div>
@@ -1842,86 +1843,149 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
   }
 
   /* =======================================================================
-     WORKER — search IDs, generation-based cancellation, main-thread fallback
+     WORKER POOLS — independent AI move worker and Analysis worker
      ======================================================================= */
-  var WK = {
-    worker: null, pending: Object.create(null), seq: 0, gen: 0,
-    mode: 'none', inflight: 0
-  };
+  var workerBlobUrl = null;
+  function getWorkerBlobUrl() {
+    if (workerBlobUrl) return workerBlobUrl;
+    if (typeof Worker === 'undefined' || typeof URL === 'undefined' || !URL.createObjectURL) return null;
+    try {
+      var engEl = $('engineSrc'), wrkEl = $('workerSrc');
+      if (!engEl || !wrkEl) return null;
+      var src = engEl.textContent + '\n' + wrkEl.textContent;
+      var blob = new Blob([src], { type: 'application/javascript' });
+      workerBlobUrl = URL.createObjectURL(blob);
+      return workerBlobUrl;
+    } catch (e) {
+      return null;
+    }
+  }
 
-  function initWorker() {
-    if (typeof Worker === 'undefined' || typeof URL === 'undefined' || !URL.createObjectURL) {
-      WK.mode = 'main'; setEngineBadge(); return;
+  function createPool(name) {
+    return {
+      name: name,
+      worker: null,
+      pending: Object.create(null),
+      seq: 0,
+      gen: 0,
+      mode: 'none',
+      inflight: 0
+    };
+  }
+
+  var WK = createPool('AI');        // Dedicated AI move worker
+  var AW = createPool('Analysis');  // Dedicated Analysis worker
+
+  function initPool(pool) {
+    var url = getWorkerBlobUrl();
+    if (!url) {
+      pool.mode = 'main';
+      setEngineBadge();
+      return;
     }
     try {
-      var src = $('engineSrc').textContent + '\n' + $('workerSrc').textContent;
-      var blob = new Blob([src], { type: 'application/javascript' });
-      WK.worker = new Worker(URL.createObjectURL(blob));
-      WK.worker.onmessage = onWorkerMessage;
-      WK.worker.onerror = function () {
-        // worker died: fall back to the main thread rather than losing the app
-        try { WK.worker.terminate(); } catch (e) {}
-        WK.worker = null; WK.mode = 'main'; setEngineBadge();
-        showError('Engine worker failed — analysis now runs on the main thread (shorter budgets).');
-        failAllPending('worker-error');
+      pool.worker = new Worker(url);
+      pool.worker.onmessage = function (e) { onPoolMessage(pool, e); };
+      pool.worker.onerror = function () {
+        try { pool.worker.terminate(); } catch (e) {}
+        pool.worker = null;
+        pool.mode = 'main';
+        setEngineBadge();
+        showError(pool.name + ' engine worker failed — running on main thread.');
+        failPoolPending(pool, 'worker-error');
       };
-      WK.mode = 'worker';
+      pool.mode = 'worker';
     } catch (err) {
-      WK.worker = null; WK.mode = 'main';
+      pool.worker = null;
+      pool.mode = 'main';
     }
     setEngineBadge();
   }
-  function setEngineBadge() {
-    var b = $('engineBadge'); if (b) b.textContent = WK.mode === 'worker' ? 'worker' : 'main thread';
+
+  function initWorker() {
+    initPool(WK);
+    initPool(AW);
   }
-  function onWorkerMessage(e) {
-    var d = e.data || {}, p = WK.pending[d.id];
-    if (!p) return;                                  // stale: request already superseded
-    if (p.gen !== WK.gen) { delete WK.pending[d.id]; return; }
-    if (d.kind === 'progress') { if (p.onProgress) { try { p.onProgress(d.p); } catch (er) {} } return; }
-    delete WK.pending[d.id]; WK.inflight--;
-    if (d.kind === 'error') { p.reject(new Error(d.message || 'engine error')); return; }
+
+  function setEngineBadge() {
+    var b = $('engineBadge');
+    if (!b) return;
+    var mode = (WK.mode === 'worker' && AW.mode === 'worker') ? 'worker (dual)' :
+               (WK.mode === 'worker' || AW.mode === 'worker') ? 'worker' : 'main thread';
+    b.textContent = mode;
+  }
+
+  function onPoolMessage(pool, e) {
+    var d = e.data || {}, p = pool.pending[d.id];
+    if (!p) return;
+    if (p.gen !== pool.gen) { delete pool.pending[d.id]; return; }
+    if (d.kind === 'progress') {
+      if (p.onProgress) { try { p.onProgress(d.p); } catch (er) {} }
+      return;
+    }
+    delete pool.pending[d.id];
+    pool.inflight--;
+    if (d.kind === 'error') {
+      p.reject(new Error(d.message || 'engine error'));
+      return;
+    }
     p.resolve(d.res);
   }
-  function failAllPending(reason) {
-    var keys = Object.keys(WK.pending);
+
+  function failPoolPending(pool, reason) {
+    var keys = Object.keys(pool.pending);
     for (var i = 0; i < keys.length; i++) {
-      var p = WK.pending[keys[i]]; delete WK.pending[keys[i]];
+      var p = pool.pending[keys[i]];
+      delete pool.pending[keys[i]];
       try { p.reject({ cancelled: true, reason: reason }); } catch (e) {}
     }
-    WK.inflight = 0;
+    pool.inflight = 0;
   }
-  /* Simple cancellation: terminate+respawn the worker. Any in-flight promise
-     is rejected with {cancelled:true} and the generation counter prevents late
-     messages from the dead worker from resolving anything. */
-  function cancelAllSearches(reason) {
-    WK.gen++;
-    aiPending = false;
-    failAllPending(reason || 'cancelled');
-    if (WK.worker) {
-      try { WK.worker.terminate(); } catch (e) {}
-      WK.worker = null;
-      initWorker();
+
+  function cancelPool(pool, reason, force) {
+    var wasInflight = pool.inflight > 0;
+    pool.gen++;
+    failPoolPending(pool, reason || 'cancelled');
+    if (pool.worker && (force || wasInflight)) {
+      try { pool.worker.terminate(); } catch (e) {}
+      pool.worker = null;
+      initPool(pool);
     }
   }
 
-  function ask(payload, onProgress) {
-    var id = ++WK.seq, gen = WK.gen;
+  function cancelAI(reason) {
+    aiPending = false;
+    setAiSearching(false);
+    cancelPool(WK, reason || 'cancelled', false);
+  }
+
+  function cancelAnalysis(reason) {
+    setSearching(false);
+    cancelPool(AW, reason || 'cancelled', false);
+  }
+
+  function cancelAllSearches(reason) {
+    cancelAI(reason);
+    cancelAnalysis(reason);
+  }
+
+  function askPool(pool, payload, onProgress) {
+    var id = ++pool.seq, gen = pool.gen;
     return new Promise(function (resolve, reject) {
-      WK.pending[id] = { resolve: resolve, reject: reject, onProgress: onProgress, gen: gen };
-      WK.inflight++;
-      if (WK.worker) {
+      pool.pending[id] = { resolve: resolve, reject: reject, onProgress: onProgress, gen: gen };
+      pool.inflight++;
+      if (pool.worker) {
         payload.id = id;
-        try { WK.worker.postMessage(payload); }
-        catch (err) { delete WK.pending[id]; WK.inflight--; reject(err); }
+        try { pool.worker.postMessage(payload); }
+        catch (err) { delete pool.pending[id]; pool.inflight--; reject(err); }
         return;
       }
       /* main-thread fallback: deferred so the UI paints first, and with a
          hard budget cap so the page never locks up for seconds at a time. */
       setTimeout(function () {
-        var p = WK.pending[id];
-        if (!p || p.gen !== WK.gen) { delete WK.pending[id]; return; }
-        delete WK.pending[id]; WK.inflight--;
+        var p = pool.pending[id];
+        if (!p || p.gen !== pool.gen) { delete pool.pending[id]; return; }
+        delete pool.pending[id]; pool.inflight--;
         try {
           var s = new E.State(), i;
           if (payload.root) for (i = 0; i < LEN; i++) if (payload.root[i]) s.play(i, payload.root[i]);
@@ -1938,6 +2002,15 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
       }, 12);
     });
   }
+
+  function askAI(payload, onProgress) {
+    return askPool(WK, payload, onProgress);
+  }
+
+  function ask(payload, onProgress) {
+    return askPool(AW, payload, onProgress);
+  }
+
   function isCancel(err) { return err && err.cancelled === true; }
 
   /* ---------------- request payload helpers ---------------- */
@@ -1949,13 +2022,18 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
   function rootPayload() { return G && G.root ? Array.prototype.slice.call(G.root) : null; }
 
   /* time budget: the selected time control IS the search budget. */
+  var INFINITE_MS = 3600000;
+  function isInfinite() { return S.timeMs === 0; }
+
   function analysisBudget() {
+    if (S.timeMs === 0) return 0; // 0 = infinite to engine
     /* smart budget: quiet openings do not need the full allowance */
     var stones = countStones();
     if (stones <= 2 && S.timeMs > 2000) return Math.max(600, Math.round(S.timeMs * 0.25));
     return S.timeMs;
   }
   function aiBudget() {
+    if (S.timeMs === 0) return 30000; // AI must produce a move: 30s max
     return S.timeMs;
   }
   function countStones() {
@@ -2241,14 +2319,30 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
   }
 
   /* ---------------- analysis driver ---------------- */
-  var analysisToken = 0, analysisTimer = null, searching = false, lastProgress = null;
+  var analysisToken = 0, analysisTimer = null;
+  var searching = false, aiSearching = false, analysisSearching = false;
+  var lastProgress = null, analysisLastProgress = null, aiLastProgress = null;
+
+  function updateSearchingUI(note) {
+    searching = aiSearching || analysisSearching;
+    $('stopBtn').hidden = !searching;
+    $('searchProg').hidden = !searching;
+    if (!searching) $('searchProgFill').style.width = '0%';
+    if (searching) {
+      if (note) $('thinkDepth').innerHTML = note;
+    } else {
+      $('thinkDepth').innerHTML = '';
+    }
+  }
 
   function setSearching(on, note) {
-    searching = on;
-    $('stopBtn').hidden = !on;
-    $('searchProg').hidden = !on;
-    if (!on) $('searchProgFill').style.width = '0%';
-    $('thinkDepth').innerHTML = on ? (note || '<span class="dots"><i></i><i></i><i></i></span>') : '';
+    analysisSearching = !!on;
+    updateSearchingUI(note);
+  }
+
+  function setAiSearching(on, note) {
+    aiSearching = !!on;
+    updateSearchingUI(note);
   }
 
   function scheduleAnalysis(force) {
@@ -2263,22 +2357,26 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
     var b = boardAt(G.view);
     if (G.status !== 'playing' && G.view === line().length) {
       // terminal position: no search, report the result honestly
+      cancelAnalysis('game-over');
       setSearching(false);
       current = null; setEvalDisplay(null);
       setEngineStatus(G.winner ? sName(G.winner) + ' has five in a row — game over.' : 'Draw — board full.');
       showEngineInfo(null); renderPosition();
       return;
     }
-    if (S.cache && !overrideMs && cache.has(key)) {
+    if (S.cache && overrideMs === undefined && cache.has(key)) {
+      cancelAnalysis('cached');
       applyAnalysis(cache.get(key), tok, key, false);
       setEngineStatus('Cached — depth ' + (cache.get(key).depth || 0));
       return;
     }
-    var budget = overrideMs || analysisBudget();
+    var budget = overrideMs !== undefined ? overrideMs : analysisBudget();
     var t0 = Date.now();
+    cancelAnalysis('new-analysis');
+    analysisLastProgress = null;
     lastProgress = null;
     setSearching(true);
-    setEngineStatus('Searching…');
+    if (!aiSearching) setEngineStatus('Searching…');
     STATS.analyses++;
 
     ask({
@@ -2286,6 +2384,7 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
       side: sideAt(G.view), timeMs: budget, vct: true
     }, function (p) {
       if (tok !== analysisToken) return;                    // stale progress: drop
+      analysisLastProgress = p;
       lastProgress = p;
       applyIteration(p, budget, t0);
     }).then(function (res) {
@@ -2293,8 +2392,10 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
       if (S.cache) cache.set(key, res);
       setSearching(false);
       applyAnalysis(res, tok, key, true);
-      setEngineStatus('Depth ' + res.depth + ' · ' + (res.nodes || 0).toLocaleString() + ' nodes · ' +
-        ((res.timeMs || 0) / 1000).toFixed(2) + 's' + (res.stoppedByTime ? ' (time limit)' : ''));
+      if (!aiSearching) {
+        setEngineStatus('Depth ' + res.depth + ' · ' + (res.nodes || 0).toLocaleString() + ' nodes · ' +
+          ((res.timeMs || 0) / 1000).toFixed(2) + 's' + (res.stoppedByTime ? ' (time limit)' : ''));
+      }
       searchHistory.unshift({ at: Date.now(), depth: res.depth, score: res.score, nodes: res.nodes, ply: G.view });
       if (searchHistory.length > 8) searchHistory.pop();
       refreshScore();
@@ -2302,13 +2403,13 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
       if (tok !== analysisToken) return;
       setSearching(false);
       if (isCancel(err)) {
-        if (lastProgress) {
-          var partial = progressToResult(lastProgress);
+        if (analysisLastProgress) {
+          var partial = progressToResult(analysisLastProgress);
           applyAnalysis(partial, tok, null, true);
-          setEngineStatus('Stopped — keeping completed depth ' + lastProgress.depth + '.');
-        } else setEngineStatus('Search stopped before the first depth completed.');
+          if (!aiSearching) setEngineStatus('Stopped — keeping completed depth ' + analysisLastProgress.depth + '.');
+        } else if (!aiSearching) setEngineStatus('Search stopped before the first depth completed.');
       } else {
-        setEngineStatus('Analysis failed.');
+        if (!aiSearching) setEngineStatus('Analysis failed.');
         showError('Analysis failed: ' + ((err && err.message) || err));
       }
     });
@@ -2326,10 +2427,12 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
     if (S.evalBar) setEvalDisplay(res);
     showEngineInfo(res, true);
     renderPosition();
-    var frac = budget ? clamp((Date.now() - t0) / budget, 0, 1) : ((p.depth % 10) / 10);
-    $('searchProgFill').style.width = (frac * 100).toFixed(0) + '%';
-    $('thinkDepth').textContent = 'depth ' + p.depth;
-    setEngineStatus('Depth ' + p.depth + ' complete · ' + (p.nodes || 0).toLocaleString() + ' nodes — searching deeper…');
+    if (!aiSearching) {
+      var frac = budget ? clamp((Date.now() - t0) / budget, 0, 1) : ((p.depth % 10) / 10);
+      $('searchProgFill').style.width = (frac * 100).toFixed(0) + '%';
+      $('thinkDepth').textContent = 'depth ' + p.depth;
+      setEngineStatus('Depth ' + p.depth + ' complete · ' + (p.nodes || 0).toLocaleString() + ' nodes — searching deeper…');
+    }
   }
   function progressToResult(p) {
     var forced = Math.abs(p.score) >= E.MATE_THRESHOLD;
@@ -2642,23 +2745,21 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
     var budget = aiBudget();
     var side = sideAt(G.view);
     var moves = movesUpTo(G.view), root = rootPayload();
-    lastProgress = null;
-    setSearching(true, '<span class="dots"><i></i><i></i><i></i></span>');
+    aiLastProgress = null;
+    setAiSearching(true, '<span class="dots"><i></i><i></i><i></i></span>');
     setEngineStatus('AI thinking at level ' + G.level + ' (' + (budget / 1000).toFixed(1) + 's budget)…');
     var t0 = Date.now();
-    ask({ type: 'move', moves: moves, root: root, side: side, level: G.level, timeMs: budget },
+    askAI({ type: 'move', moves: moves, root: root, side: side, level: G.level, timeMs: budget },
       function (p) {
         if (tok !== aiToken) return;
-        lastProgress = p;
+        aiLastProgress = p;
         $('thinkDepth').textContent = 'depth ' + p.depth;
         $('searchProgFill').style.width = (clamp((Date.now() - t0) / budget, 0, 1) * 100).toFixed(0) + '%';
       }
-
-
     ).then(function (res) {
       aiPending = false;
+      setAiSearching(false);
       if (tok !== aiToken) return;                    // stale AI result: MUST NOT move
-      setSearching(false);
       if (!res || res.idx == null) { setEngineStatus('AI found no move.'); return; }
       if (!aiToMove()) return;                        // position changed underneath us
       G.lastAiMs = Date.now() - t0;
@@ -2666,13 +2767,13 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
       place(res.idx, side);
     }).catch(function (err) {
       aiPending = false;
+      setAiSearching(false);
       if (tok !== aiToken) return;
-      setSearching(false);
       if (isCancel(err)) {
         // Stop pressed during AI thinking: use the best move from the deepest
         // COMPLETED iteration, else a fast guaranteed-legal engine move.
         if (!aiToMove()) { setEngineStatus('Search stopped.'); return; }
-        var pick = lastProgress && lastProgress.best != null ? lastProgress.best : null;
+        var pick = aiLastProgress && aiLastProgress.best != null ? aiLastProgress.best : null;
         if (pick == null) {
           try {
             var s = new E.State();
@@ -2851,7 +2952,8 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
     if (G.status !== 'playing') return;
     G.hintsUsed++;
     setEngineStatus('Finding a hint…');
-    ask({ type: 'move', moves: movesUpTo(G.view), root: rootPayload(), side: sideAt(G.view), level: 8, timeMs: Math.min(2500, analysisBudget()) })
+    var hintBudget = S.timeMs === 0 ? 2500 : Math.min(2500, analysisBudget() || 2500);
+    ask({ type: 'move', moves: movesUpTo(G.view), root: rootPayload(), side: sideAt(G.view), level: 8, timeMs: hintBudget })
       .then(function (res) {
         if (!res || res.idx == null) return;
         G.hintIdx = res.idx; renderPosition();
@@ -2860,8 +2962,13 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
       }).catch(function (e) { if (!isCancel(e)) setEngineStatus('Hint failed.'); });
   };
   $('stopBtn').onclick = function () {
-    cancelAllSearches('stop');
-    toast('Search stopped');
+    if (aiPending) {
+      cancelAllSearches('stop');
+      toast('AI and search stopped');
+    } else {
+      cancelAnalysis('stop');
+      toast('Search stopped');
+    }
   };
   $('deepBtn').onclick = function () {
     STATS.deepAnalyses++; store('stats3', STATS);
@@ -3514,7 +3621,6 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
   if (saved) Object.keys(DEFAULTS).forEach(function (k) { if (saved[k] !== undefined) S[k] = saved[k]; });
   S.level = clamp(S.level | 0 || 5, 1, 9);
   if (S.side !== 'o') S.side = 'x';
-  if ([1000, 5000, 30000, 60000].indexOf(S.timeMs) < 0) S.timeMs = 5000;
 
   buildBoard();
   initWorker();
@@ -3543,7 +3649,9 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
   window.__XO = {
     get G() { return G; }, get S() { return S; },
     get current() { return current; },
-    get worker() { return WK; },
+    get worker() { return AW; },
+    get aiWorker() { return WK; },
+    get analysisWorker() { return AW; },
     sideAt: sideAt, boardAt: boardAt, line: line, dp: dp, nm: nm,
     goRoute: goRoute, startGame: startGame, encodePos: encodePos, decodePos: decodePos,
     posKey: posKey, analysisTokenValue: function () { return analysisToken; },
@@ -3551,9 +3659,9 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
     isSearching: function () { return searching; },
     PUZZLES: PUZZLES,
     /* worker/search-cancellation hooks */
-    ask: ask, cancelAllSearches: cancelAllSearches,
-    workerGen: function () { return WK.gen; },
-    pendingCount: function () { return Object.keys(WK.pending).length; },
+    ask: ask, askAI: askAI, cancelAllSearches: cancelAllSearches, cancelAnalysis: cancelAnalysis, cancelAI: cancelAI,
+    workerGen: function () { return AW.gen; },
+    pendingCount: function () { return Object.keys(WK.pending).length + Object.keys(AW.pending).length; },
     runAnalysis: runAnalysis, scheduleAnalysis: scheduleAnalysis,
     iterationLog: function () { return iterationLog.slice(); },
     clearIterationLog: function () { iterationLog.length = 0; },

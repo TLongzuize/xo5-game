@@ -339,14 +339,17 @@ async function until(fn, maxMs = 12000) {
   section('Time controls & Stop (spec #5)');
   {
     const tBtns = [...$('timeSeg').querySelectorAll('button')].map(b => b.dataset.v);
-    ok(tBtns.indexOf('30000') >= 0 && tBtns.indexOf('60000') >= 0 && tBtns.indexOf('5000') >= 0,
-      '5s, 30s and 60s time controls exist', tBtns.join(','));
+    ok(tBtns.indexOf('30000') >= 0 && tBtns.indexOf('60000') >= 0 && tBtns.indexOf('5000') >= 0 && tBtns.indexOf('0') >= 0,
+      '5s, 30s, 60s and ∞ time controls exist', tBtns.join(','));
     click($('timeSeg').querySelector('[data-v="30000"]'));
     await sleep(80);
     ok(XO.S.timeMs === 30000, 'selecting 30s sets a 30000ms budget', XO.S.timeMs);
     click($('timeSeg').querySelector('[data-v="60000"]'));
     await sleep(80);
     ok(XO.S.timeMs === 60000, 'selecting 60s sets a 60000ms budget', XO.S.timeMs);
+    click($('timeSeg').querySelector('[data-v="0"]'));
+    await sleep(80);
+    ok(XO.S.timeMs === 0, 'selecting ∞ sets an infinite budget', XO.S.timeMs);
     click($('timeSeg').querySelector('[data-v="5000"]'));
     await sleep(80);
     ok(XO.S.timeMs === 5000, '5s selected', XO.S.timeMs);

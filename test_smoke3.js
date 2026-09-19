@@ -63,11 +63,12 @@ function C(name,cond,extra){checks.push({name,cond:!!cond,extra});}
   const lvBtns=[...$('levelSeg').querySelectorAll('button')].map(b=>b.dataset.v);
   C('AI levels 1-9 present', lvBtns.join(',')==='1,2,3,4,5,6,7,8,9', lvBtns.join(','));
 
-  // time controls: 5s, 30s, 60s
+  // time controls: 5s, 30s, 60s, ∞
   const tBtns=[...$('timeSeg').querySelectorAll('button')].map(b=>b.dataset.v);
   C('5s control present', tBtns.includes('5000'));
   C('30s control present', tBtns.includes('30000'));
   C('60s control present', tBtns.includes('60000'));
+  C('∞ control present', tBtns.includes('0'));
 
   // Stop works — check immediately (the main-thread fallback used in this
   // headless test environment can finish a shallow search in well under
