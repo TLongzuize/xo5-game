@@ -1839,6 +1839,7 @@
   if (saved) Object.keys(DEFAULTS).forEach(function (k) { if (saved[k] !== undefined) S[k] = saved[k]; });
   S.level = clamp(S.level | 0 || 5, 1, 9);
   if (S.side !== 'o') S.side = 'x';
+  if ([1000, 5000, 30000, 60000].indexOf(S.timeMs) < 0) S.timeMs = 5000;
 
   buildBoard();
   initWorker();
