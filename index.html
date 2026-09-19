@@ -1983,22 +1983,34 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
   }
   function rootPayload() { return G && G.root ? Array.prototype.slice.call(G.root) : null; }
 
-  /* time budget: the selected time control IS the search budget.
-     S.timeMs === 0 means Infinite.
-     - For the engine we pass timeMs: 0 which the engine interprets as infinite
-       (deadline = null, maxDepth = 40). Stop control (cooperative cancel +
-       terminate+respawn) is the only way to end it.
-     - INFINITE_MS is kept only for display purposes (progress bar, status text). */
-  var INFINITE_MS = 3600000;
+  /* time budget:
+     S.timeMs === 0 means the player chose "Infinite" time control.
+
+     aiBudget()      — used for AI *move* selection in Play AI mode.
+                       Even in Infinite mode the AI must eventually pick a move;
+                       we give it a generous 30s so it plays at high depth but
+                       still terminates.  Stop button (cooperative cancel +
+                       terminate) works at any time.
+
+     analysisBudget() — used for the Analysis panel continuous search.
+                        In Infinite mode we pass timeMs: 0 to the engine which
+                        means "search until Stop is pressed".  This is safe
+                        because analysis runs in a worker and the Stop button
+                        terminates the worker. */
+  var INFINITE_MS = 3600000;           // display-only constant
+  var AI_INFINITE_MS = 30000;          // 30 s for AI move in Infinite mode
   function analysisBudget() {
-    if (S.timeMs === 0) return 0;   // 0 = Infinite to the engine
+    if (S.timeMs === 0) return 0;       // 0 = true infinite to the engine
     /* smart budget: quiet openings do not need the full allowance */
     var stones = countStones();
     if (stones <= 2 && S.timeMs > 2000) return Math.max(600, Math.round(S.timeMs * 0.25));
     return S.timeMs;
   }
   function aiBudget() {
-    if (S.timeMs === 0) return 0;   // 0 = Infinite to the engine
+    /* Infinite time control: AI still needs to terminate and play a move.
+       Use a generous 30 s budget — it reaches depth 12+ which is very strong.
+       The Stop button can cut this short at any time. */
+    if (S.timeMs === 0) return AI_INFINITE_MS;
     return S.timeMs;
   }
   function countStones() {
@@ -2688,16 +2700,17 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
     var moves = movesUpTo(G.view), root = rootPayload();
     lastProgress = null;
     setSearching(true, '<span class="dots"><i></i><i></i><i></i></span>');
-    setEngineStatus('AI thinking at level ' + G.level + ' (' + (budget === 0 ? '∞' : (budget / 1000).toFixed(1) + 's') + ' budget)…');
+    setEngineStatus('AI thinking at level ' + G.level + ' (' + (isInfinite() ? '∞' : (budget / 1000).toFixed(1) + 's') + ' budget)…');
     var t0 = Date.now();
     ask({ type: 'move', moves: moves, root: root, side: side, level: G.level, timeMs: budget },
       function (p) {
         if (tok !== aiToken) return;
         lastProgress = p;
         $('thinkDepth').textContent = 'depth ' + p.depth;
-        /* Infinite mode: animate as pulsing 100%; timed mode: fill by elapsed fraction */
-        $('searchProgFill').style.width = (budget === 0 ? 100 : clamp((Date.now() - t0) / budget, 0, 1) * 100).toFixed(0) + '%';
+        /* Infinite mode: fill bar to 100% (pulsing animation shows activity) */
+        $('searchProgFill').style.width = (isInfinite() ? 100 : clamp((Date.now() - t0) / budget, 0, 1) * 100).toFixed(0) + '%';
       }
+
 
     ).then(function (res) {
       aiPending = false;
