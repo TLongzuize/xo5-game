@@ -1751,7 +1751,7 @@
      ======================================================================= */
   function openModal(id) { $(id).classList.add('open'); }
   function closeModal(id) { $(id).classList.remove('open'); }
-  function closeAll() { ['settingsOverlay', 'confirmOverlay', 'endOverlay', 'ioOverlay', 'editOverlay', 'cmpOverlay'].forEach(closeModal); }
+  function closeAll() { ['settingsOverlay', 'confirmOverlay', 'endOverlay', 'ioOverlay', 'editOverlay', 'cmpOverlay', 'aboutOverlay'].forEach(closeModal); }
   var confRes = null;
   function confirmDialog(text, title) {
     $('confText').textContent = text; $('confTitle').textContent = title || 'Confirm';
@@ -1763,6 +1763,8 @@
   [].forEach.call(document.querySelectorAll('[data-close]'), function (b) {
     b.onclick = function () { if (G && G.editing) cancelEdit(); else closeAll(); };
   });
+  var aboutBtnEl = $('aboutBtn');
+  if (aboutBtnEl) aboutBtnEl.onclick = function () { openModal('aboutOverlay'); };
   [].forEach.call(document.querySelectorAll('.overlay'), function (ov) {
     ov.addEventListener('mousedown', function (e) {
       if (e.target === ov && ov.id !== 'endOverlay' && ov.id !== 'editOverlay') closeModal(ov.id);

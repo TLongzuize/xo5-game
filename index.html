@@ -318,6 +318,32 @@ textarea.io{width:100%;min-height:140px;border-radius:10px;border:1px solid var(
 .hintline{color:var(--text-3);font-size:11.5px;margin:9px 2px 0}
 .errbar{background:rgba(240,68,56,.12);border:1px solid rgba(240,68,56,.45);color:#B42318;border-radius:10px;padding:9px 12px;font-size:12.5px;margin-bottom:12px;display:flex;justify-content:space-between;gap:10px;align-items:center}
 html[data-theme="dark"] .errbar{color:#FDA29B}
+.devbanner{background:rgba(240,68,56,.09);border-bottom:1px solid rgba(240,68,56,.35);color:#912018;padding:9px 20px;font-size:12.5px;font-weight:500;text-align:center;letter-spacing:.01em;margin:-16px -16px 16px}
+html[data-theme="dark"] .devbanner{background:rgba(240,68,56,.14);color:#FDA29B;border-bottom-color:rgba(240,68,56,.4)}
+
+/* ---- about modal ---- */
+.about-section{margin-bottom:20px}
+.about-section h3{font-family:"Space Grotesk",sans-serif;font-size:14px;font-weight:700;margin:0 0 7px;color:var(--text)}
+.about-section p,.about-section li{font-size:13px;color:var(--text-2);margin:0 0 5px;line-height:1.6}
+.about-section ul,.about-section ol{margin:4px 0 0 0;padding-left:18px}
+.about-section li{margin:2px 0}
+.about-feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:9px;margin-top:4px}
+.about-feat{background:var(--card-2);border:1px solid var(--line);border-radius:11px;padding:11px 13px}
+.about-feat .af-title{font-family:"Space Grotesk",sans-serif;font-size:13px;font-weight:700;margin:0 0 4px}
+.about-feat p{font-size:12px;color:var(--text-2);margin:0;line-height:1.5}
+
+/* ---- home feature highlights ---- */
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-top:12px}
+.feat-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;text-align:left}
+.feat-card .fc-icon{font-size:22px;margin-bottom:8px;line-height:1}
+.feat-card h4{font-family:"Space Grotesk",sans-serif;font-size:13.5px;font-weight:700;margin:0 0 5px}
+.feat-card p{font-size:12px;color:var(--text-2);margin:0;line-height:1.55}
+
+/* ---- home how-to-play ---- */
+.howto{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 24px;margin-top:12px}
+.howto h3{font-family:"Space Grotesk",sans-serif;font-size:15px;font-weight:700;margin:0 0 12px}
+.howto ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.howto li{font-size:13px;color:var(--text-2);line-height:1.55}
 </style>
 </head>
 <body>
@@ -349,44 +375,50 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
     </div>
   </header>
 
+  <!-- Development notice — shown every page load, no dismiss button, no persistent state -->
+  <div class="devbanner" id="devBanner" role="status" aria-live="polite">
+    🚧 This website is under active development. Some features may be incomplete or subject to change.
+  </div>
+
   <div id="errBar" class="errbar" hidden><span id="errText"></span><button class="btn sm" id="errClose">Dismiss</button></div>
 
   <!-- ===================== HOME ===================== -->
   <section class="view" id="viewHome" aria-label="Home">
     <div class="hero">
-      <h2>Five in a row, with a real engine behind it.</h2>
-      <p>A 15×15 gomoku board backed by an alpha-beta search engine with a VCF/VCT forcing solver, live iterative-deepening analysis, evaluation bar, principal variation and candidate moves.</p>
+      <h2>XO 5-in-a-Row</h2>
+      <p>A modern 15×15 strategy game with an alpha-beta search engine, live evaluation, and tactical analysis. Challenge the AI, play locally, or explore positions on your own.</p>
       <div class="pills">
-        <span class="pill">9 AI levels</span><span class="pill">Web-Worker search</span>
-        <span class="pill">Proven M# mates</span><span class="pill">Live evaluation</span>
-        <span class="pill">30s / 60s / ∞ budgets</span>
+        <span class="pill">9 AI levels</span><span class="pill">Dual web workers</span>
+        <span class="pill">Forced-win detection</span><span class="pill">Live evaluation bar</span>
+        <span class="pill">1s · 5s · 30s · 60s · ∞</span>
       </div>
     </div>
+
     <div class="modegrid">
       <button class="mode" data-route="play">
         <div class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M7 12h10"/></svg></div>
         <h3>Play vs AI</h3>
-        <p>Nine real engine levels. Choose your side — X always moves first.</p>
+        <p>Nine engine levels. Choose your side — X always moves first.</p>
       </button>
       <button class="mode" data-route="local">
         <div class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M3 20c0-3 2.5-5 5-5M21 20c0-3-2.5-5-5-5"/></svg></div>
         <h3>Local 2 Player</h3>
-        <p>Two humans, one board, no engine moves. Undo and analysis still work.</p>
+        <p>Two players, one board. No engine moves — just undo, analysis, and history.</p>
       </button>
       <button class="mode" data-route="analysis">
         <div class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5M4 19h16M8 15l3-4 3 3 5-7"/></svg></div>
         <h3>Analysis Board</h3>
-        <p>Free exploration: play both sides, branch variations, deep-analyse any position.</p>
+        <p>Play any side freely, branch variations, and analyse any position in depth.</p>
       </button>
       <button class="mode" data-route="puzzles">
         <div class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h5V4h6v3h5v6h-3v6H7v-6H4z"/></svg></div>
         <h3>Puzzles &amp; Daily</h3>
-        <p>Solver-verified positions. Find the forced win; every guess is engine-checked.</p>
+        <p>Engine-verified positions. Find the forced win — every answer is checked.</p>
       </button>
       <button class="mode" data-route="stats">
         <div class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></div>
         <h3>Stats &amp; Achievements</h3>
-        <p>Games, win rate, streaks, level milestones and puzzle progress.</p>
+        <p>Win rate, streaks, level milestones, and puzzle progress all tracked locally.</p>
       </button>
       <button class="mode" id="homeContinue" data-route="play">
         <div class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 5v14l11-7z"/></svg></div>
@@ -394,6 +426,56 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
         <p id="homeContinueText">Resume the game in progress.</p>
       </button>
     </div>
+
+    <!-- Feature highlights -->
+    <div class="feat-grid">
+      <div class="feat-card">
+        <div class="fc-icon">🤖</div>
+        <h4>9 AI Levels</h4>
+        <p>From casual to tactically demanding. Each level adjusts search depth and move quality.</p>
+      </div>
+      <div class="feat-card">
+        <div class="fc-icon">📊</div>
+        <h4>Deep Analysis</h4>
+        <p>Iterative-deepening search with evaluation bar, best-move arrows, PV, and candidates.</p>
+      </div>
+      <div class="feat-card">
+        <div class="fc-icon">♾️</div>
+        <h4>Flexible Time Controls</h4>
+        <p>Set a budget of 1s, 5s, 30s, 60s, or run indefinitely with the ∞ mode.</p>
+      </div>
+      <div class="feat-card">
+        <div class="fc-icon">🎯</div>
+        <h4>Forced-Win Detection</h4>
+        <p>The engine proves forced wins (M1, M2 …) and displays them as verified results.</p>
+      </div>
+      <div class="feat-card">
+        <div class="fc-icon">🧩</div>
+        <h4>Puzzles</h4>
+        <p>Tactical positions with engine-verified solutions. Find the winning move.</p>
+      </div>
+      <div class="feat-card">
+        <div class="fc-icon">👥</div>
+        <h4>Local Multiplayer</h4>
+        <p>Pass-and-play on the same device. Undo, analysis, and history all work.</p>
+      </div>
+    </div>
+
+    <!-- How to play -->
+    <div class="howto">
+      <h3>How to Play</h3>
+      <ol>
+        <li>X always moves first. Players alternate placing their mark on an empty intersection.</li>
+        <li>The goal is to place five consecutive marks in a row — horizontally, vertically, or diagonally.</li>
+        <li>Block your opponent's threats before they complete their line.</li>
+        <li>The first player to make five in a row wins. A full board with no five is a draw.</li>
+      </ol>
+    </div>
+
+    <!-- Footer with About link -->
+    <p style="text-align:center;margin-top:20px;font-size:12px;color:var(--text-3)">
+      <button class="btn ghost" style="font-size:12px;padding:6px 10px;color:var(--text-3)" id="aboutBtn" aria-haspopup="dialog">About this web ›</button>
+    </p>
   </section>
 
   <!-- ===================== GAME / ANALYSIS ===================== -->
@@ -652,6 +734,59 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
     <div class="modal-body">
       <p class="hintline" style="margin-top:0">Each candidate is searched independently at the current time budget. Scores are X-positive.</p>
       <div id="cmpBody"><p class="empty-note">Running…</p></div>
+    </div>
+    <div class="modal-foot"><button class="btn primary" data-close>Close</button></div>
+  </div>
+</div>
+
+<!-- ===================== ABOUT MODAL ===================== -->
+<div class="overlay" id="aboutOverlay" role="dialog" aria-modal="true" aria-labelledby="aboutModalTitle">
+  <div class="modal wide">
+    <div class="modal-head">
+      <h2 id="aboutModalTitle">About XO 5-in-a-Row</h2>
+      <button class="btn icon ghost" data-close aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="about-section">
+        <h3>What is XO 5-in-a-Row?</h3>
+        <p>XO 5-in-a-Row is a browser-based implementation of the classic strategy game played on a 15×15 grid. Two players — X and O — take turns placing their mark on empty intersections. X always moves first. The first player to create five consecutive marks in a row — horizontally, vertically, or diagonally — wins the game. A completely full board with no winner is a draw.</p>
+      </div>
+
+      <div class="about-section">
+        <h3>Game Modes</h3>
+        <ul>
+          <li><strong>Play vs AI</strong> — Face the engine at one of 9 difficulty levels. Choose to play as X or O.</li>
+          <li><strong>Local 2 Player</strong> — Two people take turns on the same device. No AI involvement.</li>
+          <li><strong>Analysis Board</strong> — Freely place stones for both sides, branch variations, and run the engine on any position.</li>
+          <li><strong>Puzzles</strong> — Solve engine-verified tactical positions. Every submitted answer is checked by the engine.</li>
+        </ul>
+      </div>
+
+      <div class="about-section">
+        <h3>AI &amp; Analysis</h3>
+        <div class="about-feat-grid">
+          <div class="about-feat"><p class="af-title">9 AI Levels</p><p>Level 1 plays quickly with limited lookahead. Level 9 searches deeply with full tactical awareness.</p></div>
+          <div class="about-feat"><p class="af-title">Evaluation Bar</p><p>A live graphical bar shows how the engine evaluates the position, from X-winning to O-winning.</p></div>
+          <div class="about-feat"><p class="af-title">Best-Move Arrow</p><p>The engine highlights its preferred move directly on the board.</p></div>
+          <div class="about-feat"><p class="af-title">Principal Variation</p><p>The engine's expected sequence of moves is displayed as a line of numbered squares.</p></div>
+          <div class="about-feat"><p class="af-title">Candidate Moves</p><p>The top candidate moves are ranked by score and shown in the engine panel.</p></div>
+          <div class="about-feat"><p class="af-title">Forced-Win Detection</p><p>Proven forced wins are displayed as M1, M2 … notation, verified by a dedicated tactical solver.</p></div>
+          <div class="about-feat"><p class="af-title">Time Controls</p><p>Choose 1s, 5s, 30s, 60s, or ∞ (infinite). Stop the search at any time.</p></div>
+          <div class="about-feat"><p class="af-title">Dual Workers</p><p>AI move calculation and position analysis run on separate background threads, so neither blocks the other.</p></div>
+        </div>
+      </div>
+
+      <div class="about-section">
+        <h3>Design Philosophy</h3>
+        <p>The project aims for a clean interface, fast gameplay, and honest evaluation. Scores are always displayed from X's perspective (positive = X is better, negative = O is better). Analysis runs in the background without freezing the page. Controls are accessible by keyboard.</p>
+      </div>
+
+      <div class="about-section">
+        <h3>Development Status</h3>
+        <p>This project is under active development. Features, AI behaviour, and interface details may continue to change as work progresses. Some features may be partially implemented or experimental. Feedback is welcome.</p>
+      </div>
+
     </div>
     <div class="modal-foot"><button class="btn primary" data-close>Close</button></div>
   </div>
@@ -3436,7 +3571,7 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
      ======================================================================= */
   function openModal(id) { $(id).classList.add('open'); }
   function closeModal(id) { $(id).classList.remove('open'); }
-  function closeAll() { ['settingsOverlay', 'confirmOverlay', 'endOverlay', 'ioOverlay', 'editOverlay', 'cmpOverlay'].forEach(closeModal); }
+  function closeAll() { ['settingsOverlay', 'confirmOverlay', 'endOverlay', 'ioOverlay', 'editOverlay', 'cmpOverlay', 'aboutOverlay'].forEach(closeModal); }
   var confRes = null;
   function confirmDialog(text, title) {
     $('confText').textContent = text; $('confTitle').textContent = title || 'Confirm';
@@ -3448,6 +3583,8 @@ html[data-theme="dark"] .errbar{color:#FDA29B}
   [].forEach.call(document.querySelectorAll('[data-close]'), function (b) {
     b.onclick = function () { if (G && G.editing) cancelEdit(); else closeAll(); };
   });
+  var aboutBtnEl = $('aboutBtn');
+  if (aboutBtnEl) aboutBtnEl.onclick = function () { openModal('aboutOverlay'); };
   [].forEach.call(document.querySelectorAll('.overlay'), function (ov) {
     ov.addEventListener('mousedown', function (e) {
       if (e.target === ov && ov.id !== 'endOverlay' && ov.id !== 'editOverlay') closeModal(ov.id);
