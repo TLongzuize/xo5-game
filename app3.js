@@ -1805,6 +1805,8 @@
   });
   var aboutBtnEl = $('aboutBtn');
   if (aboutBtnEl) aboutBtnEl.onclick = function () { openModal('aboutOverlay'); };
+  var footAboutEl = $('footAboutBtn');
+  if (footAboutEl) footAboutEl.onclick = function () { openModal('aboutOverlay'); };
   [].forEach.call(document.querySelectorAll('.overlay'), function (ov) {
     ov.addEventListener('mousedown', function (e) {
       if (e.target === ov && ov.id !== 'endOverlay' && ov.id !== 'editOverlay') closeModal(ov.id);
@@ -1928,6 +1930,7 @@
     [].forEach.call($('navLinks').querySelectorAll('button'), function (b) {
       if (b.dataset.route === r) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     });
+    closeNav();
     if (r === 'stats') refreshStatsPage();
     if (r === 'puzzles') renderPuzzles();
     if (r === 'home') updateHomeCard();
@@ -1953,7 +1956,74 @@
   [].forEach.call(document.querySelectorAll('.mode[data-route]'), function (b) {
     b.onclick = function () { goRoute(b.dataset.route); };
   });
+  /* Landing-page / footer / header call-to-action buttons. They use data-go
+     rather than data-route so they never collide with the nav or mode-card
+     wiring above, and so the nav-link test keeps seeing exactly six routes. */
+  [].forEach.call(document.querySelectorAll('[data-go]'), function (b) {
+    b.onclick = function () { goRoute(b.getAttribute('data-go')); };
+  });
   $('brandBtn').onclick = function () { goRoute('home'); };
+
+  /* ---------------- mobile navigation drawer ---------------- */
+  var topBar = $('topBar') || document.querySelector('header.top');
+  var navToggle = $('navToggle');
+  function closeNav() {
+    if (!topBar) return;
+    topBar.classList.remove('nav-open');
+    if (navToggle) navToggle.setAttribute('aria-expanded', 'false');
+  }
+  if (navToggle && topBar) {
+    navToggle.onclick = function () {
+      var open = topBar.classList.toggle('nav-open');
+      navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      navToggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    };
+    document.addEventListener('click', function (e) {
+      if (!topBar.classList.contains('nav-open')) return;
+      if (e.target && typeof e.target.closest === 'function' && e.target.closest('header.top')) return;
+      closeNav();
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeNav(); });
+  }
+
+  /* ---------------- sticky header hairline ---------------- */
+  if (topBar && typeof window.addEventListener === 'function') {
+    var stuckTick = false;
+    window.addEventListener('scroll', function () {
+      if (stuckTick) return;
+      stuckTick = true;
+      var raf = window.requestAnimationFrame || function (f) { return setTimeout(f, 16); };
+      raf(function () {
+        stuckTick = false;
+        if ((window.pageYOffset || 0) > 4) topBar.classList.add('stuck');
+        else topBar.classList.remove('stuck');
+      });
+    }, { passive: true });
+  }
+
+  /* ---------------- scroll-reveal for the home page ----------------
+     Decorative only. When IntersectionObserver is unavailable (jsdom, very
+     old browsers) or the visitor prefers reduced motion, everything is
+     revealed immediately instead — content is never left hidden. */
+  function initReveal() {
+    var targets = [].slice.call(document.querySelectorAll('[data-reveal]'));
+    if (!targets.length) return;
+    function revealAll() { targets.forEach(function (el) { el.classList.add('in'); }); }
+    var reduced = false;
+    try {
+      reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    } catch (e) { reduced = false; }
+    if (reduced || typeof IntersectionObserver !== 'function') { revealAll(); return; }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add('in');
+        io.unobserve(en.target);
+      });
+    }, { rootMargin: '0px 0px -12% 0px', threshold: 0.12 });
+    targets.forEach(function (el) { io.observe(el); });
+  }
+  try { initReveal(); } catch (e) { /* never let decoration break the app */ }
   window.addEventListener('hashchange', function () {
     var r = (location.hash || '').replace(/^#\/?/, '') || 'home';
     if (r !== currentRoute) applyRoute(ROUTES.indexOf(r) >= 0 ? r : 'home');
