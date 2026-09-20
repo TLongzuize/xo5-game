@@ -19,7 +19,10 @@
   - Interactive evaluation graph plotting win probability across the match.
   - What-If exploration mode to analyze alternative move variations.
 - 🧩 **Solver-Verified Puzzles:**
-  - Curated tactical puzzles to sharpen tactical play (finding forced VCF sequences).
+  - Curated tactical puzzles to sharpen tactical play (finding short forced-win sequences).
+  - Dedicated Puzzle Play Mode hides engine analysis while you solve; the solution appears only after you ask for it.
+  - Browser Puzzle Generator builds candidate positions in a Web Worker, shows a live mini-board, and accepts only proven mate-in-1/mate-in-2 positions.
+  - Stop generation at any time; accepted puzzles are saved immediately to a local bank and can be exported as JSON.
 - 👥 **Game Modes:**
   - **Play vs AI:** Challenge 9 difficulty tiers from casual to master.
   - **2 Players (Pass & Play):** Play locally with a friend on the same device.
@@ -30,7 +33,7 @@
   - Smooth micro-interactions, animations, and sound effects.
 - 🔒 **100% Client-Side & Private:**
   - Runs entirely inside the browser using Vanilla JavaScript and Web Workers.
-  - No backend, no accounts, and no data tracking. Match statistics and settings are saved securely in browser `localStorage`.
+  - No Firebase/backend, accounts, or data tracking is required. Match statistics, settings, and generated puzzles are saved in browser `localStorage`.
 
 ---
 
@@ -48,6 +51,16 @@ You can play immediately in any web browser without installation:
 - **Frontend:** HTML5, Modern CSS (Design Tokens, Flexbox/Grid, Dark/Light theme), Vanilla JavaScript.
 - **Engine:** Custom Alpha-Beta minimax engine with Web Worker concurrency.
 - **Build:** Simple build script bundling engine, worker, and app logic into a standalone single-file `index.html`.
+
+### Puzzle workflow
+
+The current puzzle contribution flow is browser-only. Open **Puzzles**, choose
+**Generate puzzles**, then watch the live candidate board and solver phases.
+The generator can be stopped at any time. Only positions proven by the forcing
+solver with a sequence of one or three plies are kept, corresponding to
+mate-in-1 or mate-in-2. Accepted puzzles are written immediately to the local
+bank and can be exported as JSON. Firebase/shared-bank sync is intentionally
+not implemented yet.
 
 ---
 

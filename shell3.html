@@ -823,6 +823,129 @@ html[data-theme="dark"] .q.mistake,html[data-theme="dark"] .q.blunder{color:#FDA
 .puz h4{margin:0 0 4px;font-family:Archivo,sans-serif;font-size:14px;font-weight:700}
 .puz p{margin:0;font-size:12px;color:var(--text-2)}
 .puz .solved{color:var(--ok);font-weight:700;font-size:11px}
+.puz .tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;
+  border:1px solid var(--line-strong);color:var(--text-3);margin-top:6px;letter-spacing:.02em}
+.puz .tag.x{color:var(--x);border-color:color-mix(in srgb,var(--x) 40%,transparent);
+  background:color-mix(in srgb,var(--x) 8%,transparent)}
+.puz .tag.o{color:var(--o);border-color:color-mix(in srgb,var(--o) 40%,transparent);
+  background:color-mix(in srgb,var(--o) 8%,transparent)}
+.puz .tag.gen{color:var(--brass);border-color:color-mix(in srgb,var(--brass) 42%,transparent);
+  background:var(--brass-soft)}
+
+/* ---- puzzle generator ---- */
+.gen-lay{display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:start}
+@media (max-width:620px){.gen-lay{grid-template-columns:1fr;gap:14px}}
+
+.gen-stage{position:relative;display:grid;place-items:center;width:224px;height:224px;justify-self:center;flex:none}
+.gen-stage::before,.gen-stage::after{content:"";position:absolute;border-radius:50%;pointer-events:none}
+.gen-stage::before{inset:0;border:1px solid color-mix(in srgb,var(--o) 32%,transparent);opacity:.5}
+.gen-stage::after{inset:8px;border:1px dashed color-mix(in srgb,var(--brass) 55%,transparent);opacity:.7}
+.gen-board{position:relative;z-index:1;width:212px;height:212px;background:var(--board-bg);border:1px solid var(--line-strong);
+  border-radius:var(--r2);padding:6px;box-shadow:var(--sh1),0 0 0 7px color-mix(in srgb,var(--card) 72%,transparent);justify-self:center;flex:none}
+@media (max-width:620px){.gen-board{width:min(212px,62vw);height:min(212px,62vw)}}
+.gen-board svg{display:block;width:100%;height:100%}
+.gen-board .gl{stroke:var(--board-line);stroke-width:.045}
+.gen-board .gx{stroke:var(--x);stroke-width:.17;stroke-linecap:round}
+.gen-board .go{stroke:var(--o);stroke-width:.17;fill:none}
+.gen-board .sol{fill:none;stroke:var(--ok);stroke-width:.09;stroke-dasharray:.18 .13}
+.gen-board.idle{opacity:.5}
+.gen-live{display:inline-flex;align-items:center;gap:7px;color:var(--text-3);font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.gen-live i{width:7px;height:7px;border-radius:50%;background:var(--text-3);box-shadow:0 0 0 0 color-mix(in srgb,var(--text-3) 35%,transparent)}
+.gen-live b{font:inherit}
+.gen-overline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 13px;color:var(--brass);font-size:10px;font-weight:700;letter-spacing:.11em;text-transform:uppercase}
+.gen-overline span:last-child{color:var(--text-3);letter-spacing:.06em}
+.gen-activity{height:3px;overflow:hidden;border-radius:99px;background:var(--line);margin:0 0 15px;opacity:.55}
+.gen-activity span{display:block;width:28%;height:100%;border-radius:inherit;background:linear-gradient(90deg,transparent,var(--o),var(--brass),transparent);transform:translateX(-120%)}
+.gen-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 0 14px}
+.gen-step{position:relative;padding:7px 8px;border:1px solid var(--line);border-radius:var(--r1);background:var(--card-2);color:var(--text-3);font-size:10.5px;font-weight:700;text-align:center;transition:color .2s,border-color .2s,background .2s,transform .2s}
+.gen-step::before{content:"";display:inline-block;width:6px;height:6px;margin-right:5px;border-radius:50%;background:currentColor;vertical-align:1px}
+.gen-step.active{color:var(--o);border-color:color-mix(in srgb,var(--o) 42%,transparent);background:color-mix(in srgb,var(--o) 8%,var(--card-2));transform:translateY(-1px)}
+.gen-step.done{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 35%,transparent)}
+
+.gen-phase{display:flex;align-items:center;gap:8px;margin:0 0 10px}
+.gen-dot{width:9px;height:9px;border-radius:99px;background:var(--text-3);flex:none}
+.gen-phase.run .gen-dot{background:var(--o)}
+.gen-phase.acc .gen-dot{background:var(--ok)}
+.gen-phase.rej .gen-dot{background:var(--warn)}
+.gen-phase.err .gen-dot{background:var(--bad)}
+.gen-phase b{font-family:Archivo,sans-serif;font-size:13.5px;font-weight:700;letter-spacing:-.01em}
+
+.gen-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 0 12px}
+@media (max-width:620px){.gen-stats{grid-template-columns:repeat(2,1fr)}}
+.gen-stat{background:var(--card-2);border:1px solid var(--line);border-radius:var(--r1);padding:7px 9px;min-width:0}
+.gen-stat .l{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gen-stat .v{font-family:Archivo,sans-serif;font-weight:700;font-size:16px;font-variant-numeric:tabular-nums;
+  letter-spacing:-.02em;overflow:hidden;text-overflow:ellipsis}
+.gen-stat.acc .v{color:var(--ok)}
+
+.gen-reason{font-size:12.5px;color:var(--text-2);margin:0 0 10px;min-height:19px;
+  overflow-wrap:anywhere}
+.gen-saved{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;
+  padding:8px 11px;border-radius:var(--r1);border:1px solid color-mix(in srgb,var(--ok) 34%,transparent);
+  background:color-mix(in srgb,var(--ok) 9%,transparent);color:var(--ok)}
+.gen-saved.warn{border-color:color-mix(in srgb,var(--warn) 42%,transparent);
+  background:color-mix(in srgb,var(--warn) 11%,transparent);color:var(--warn)}
+.gen-saved.none{border-color:var(--line);background:var(--card-2);color:var(--text-3)}
+.gen-note{font-size:11.5px;color:var(--text-3);margin:8px 0 0}
+
+@media (prefers-reduced-motion:no-preference){
+  .gen-board .fresh{animation:genpop .26s var(--ease)}
+  .gen-board:not(.idle){animation:genboardidle 3.2s ease-in-out infinite}
+  @keyframes genboardidle{0%,100%{box-shadow:var(--sh1),0 0 0 7px color-mix(in srgb,var(--card) 72%,transparent)}50%{box-shadow:var(--sh1),0 0 0 7px color-mix(in srgb,var(--o) 12%,transparent),0 0 24px color-mix(in srgb,var(--o) 13%,transparent)}}
+  #genOverlay.is-running .gen-live i{background:var(--o);box-shadow:0 0 0 0 color-mix(in srgb,var(--o) 45%,transparent);animation:genlive 1.4s ease-out infinite}
+  #genOverlay.is-running .gen-activity{opacity:1}
+  #genOverlay.is-running .gen-activity span{animation:gensweep 1.35s ease-in-out infinite}
+  @keyframes genlive{70%{box-shadow:0 0 0 7px transparent}}
+  @keyframes gensweep{to{transform:translateX(440%)}}
+  @keyframes genpop{from{opacity:0;transform:scale(.4);transform-origin:center}to{opacity:1;transform:none}}
+  .gen-saved.bump{animation:genbump .34s var(--ease)}
+  @keyframes genbump{0%{transform:scale(1)}38%{transform:scale(1.035)}100%{transform:scale(1)}}
+  .gen-stat .v.tick{animation:gentick .26s var(--ease)}
+  @keyframes gentick{0%{opacity:.45}100%{opacity:1}}
+}
+
+/* ---- puzzle play mode ---- */
+.puzhud{background:var(--card);border:1px solid var(--line);border-radius:var(--r2);
+  padding:13px 15px;margin-bottom:12px;box-shadow:var(--sh1)}
+.puzhud .top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.puzhud h3{margin:0;font-family:Archivo,sans-serif;font-size:15px;font-weight:700;letter-spacing:-.02em}
+.puzhud .obj{font-size:13px;color:var(--text-2);margin:3px 0 0}
+.puzhud .obj b.x{color:var(--x)} .puzhud .obj b.o{color:var(--o)}
+.puzhud .meta{display:flex;gap:14px;font-size:12px;color:var(--text-3);margin-top:8px;flex-wrap:wrap}
+.puzhud .meta b{font-family:Archivo,sans-serif;color:var(--text-2);font-variant-numeric:tabular-nums}
+.puzhud .st{font-size:12.5px;margin:9px 0 0;min-height:18px}
+.puzhud .st.good{color:var(--ok);font-weight:600}
+.puzhud .st.bad{color:var(--bad)}
+.puzhud .acts{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}
+.puzhud .sol{margin:10px 0 0;padding:10px 12px;border-radius:var(--r1);background:var(--card-2);
+  border:1px solid var(--line);font-size:12.5px;color:var(--text-2)}
+.puzhud .sol b{color:var(--text)}
+/* Puzzle mode hides every analysis surface. Display:none, not visibility, so
+   nothing is readable from the DOM or the accessibility tree either. */
+body.puzzle-mode #evalCard,
+body.puzzle-mode #graphCard,
+body.puzzle-mode #treeCard,
+body.puzzle-mode #evalBar,
+body.puzzle-mode #arrows,
+body.puzzle-mode #mateBadge,
+body.puzzle-mode #thinkDepth,
+body.puzzle-mode #searchProg,
+body.puzzle-mode .controls.sub{display:none !important}
+body.puzzle-mode .cell.heat,body.puzzle-mode .cell.thr,body.puzzle-mode .cell.hint{
+  background:var(--board-bg) !important;--hi:0 !important;--ti:0 !important}
+
+/* Narrow-screen tap targets. The global .btn.sm is ~29px tall, which is fine
+   for a mouse but tight for a thumb. Rather than resize every small button in
+   the app, the controls that matter on a phone — the puzzle actions and the
+   generator's own footer, where Stop lives — are given a comfortable minimum
+   here and nowhere else. */
+@media (max-width:620px){
+  .puzhud .acts .btn{min-height:40px}
+  #genOverlay .seg button{min-height:38px}
+  #genOverlay .modal-foot{flex-wrap:wrap}
+  #genOverlay .modal-foot .btn{min-height:44px;flex:1 1 auto;justify-content:center}
+}
 
 /* ---- modals ---- */
 .overlay{position:fixed;inset:0;background:rgba(10,14,24,.52);backdrop-filter:blur(5px);
@@ -980,7 +1103,7 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
         <div class="hero-copy">
           <p class="hero-kicker"><i aria-hidden="true"></i>Runs in your browser. No account, no install.</p>
           <h2>Build five in a row before the engine does.</h2>
-          <p class="hero-lede">A 15&#215;15 strategy game with a real alpha-beta search engine behind it: nine levels to play against, a live read on who is winning, and an analysis board for working out what you missed.</p>
+          <p class="hero-lede">A 15&#215;15 strategy game with a real alpha-beta search engine behind it: nine levels to play against, a live read on who is winning, an analysis board, and solver-verified puzzles you can play or generate locally.</p>
           <div class="hero-cta">
             <button class="btn big onink" data-go="play">Play the engine</button>
             <button class="btn big outline-ink" data-go="analysis">Open the analysis board</button>
@@ -1047,8 +1170,8 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
       <button class="mode" data-route="puzzles">
         <div class="ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h5V4h6v3h5v6h-3v6H7v-6H4z"/></svg></div>
         <h3>Puzzles &amp; daily</h3>
-        <p>Solver-verified positions where X has a forced win. Your answer is checked live.</p>
-        <span class="go">Solve one <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span>
+        <p>Play solver-verified positions, or generate short forced wins locally with a live board and a Stop button.</p>
+        <span class="go">Open Puzzle Lab <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span>
       </button>
       <button class="mode" data-route="stats">
         <div class="ic" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></div>
@@ -1145,18 +1268,18 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
       <section class="show" data-reveal>
         <div class="show-copy">
           <p class="sec-eyebrow">Puzzles</p>
-          <h4>Positions where a win is already proven</h4>
-          <p>A small bank of hand-checked positions where X has a forced win. They are not generated on the fly and there are ten of them &mdash; but every one has been run through the solver, and so is every answer you give.</p>
+          <h4>Prove a win. Then make your own.</h4>
+          <p>Play solver-verified positions in a focused Puzzle Mode, or open Puzzle Lab to generate short forced wins locally. The live mini-board follows the candidate while the forcing solver checks it.</p>
           <ul class="show-list">
             <li><b>Your move is verified live.</b> The engine re-checks the position after you play, rather than comparing against a stored answer.</li>
             <li><b>A daily pick.</b> One puzzle from the bank is surfaced each day.</li>
-            <li><b>Solved state is remembered</b> on this device only &mdash; there are no accounts here.</li>
+            <li><b>Generate and stop anytime.</b> Accepted mate-in-1/mate-in-2 positions are saved immediately to your local bank and can be exported.</li>
           </ul>
         </div>
         <div class="show-visual">
           <div class="mock">
             <div class="mock-head">
-              <div><p class="mock-title">Puzzle</p><p class="mock-sub">X to move</p></div>
+              <div><p class="mock-title">Puzzle Lab</p><p class="mock-sub">Live board · mate-in-2 cap</p></div>
               <span class="pz-flag">Forced win available</span>
             </div>
             <svg class="pv-board mini" viewBox="0 0 198 198" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Illustration of a tactical puzzle position"><rect width="198" height="198" rx="5" class="pv-bg"/><path d="M0 0V198M22 0V198M44 0V198M66 0V198M88 0V198M110 0V198M132 0V198M154 0V198M176 0V198M198 0V198M0 0H198M0 22H198M0 44H198M0 66H198M0 88H198M0 110H198M0 132H198M0 154H198M0 176H198M0 198H198" stroke="var(--pv-line)" stroke-width="1" fill="none"/><g class="pv-x" stroke-width="2.4" stroke-linecap="round"><line x1="70.4" y1="70.4" x2="83.6" y2="83.6"/><line x1="83.6" y1="70.4" x2="70.4" y2="83.6"/></g><g class="pv-x" stroke-width="2.4" stroke-linecap="round"><line x1="92.4" y1="92.4" x2="105.6" y2="105.6"/><line x1="105.6" y1="92.4" x2="92.4" y2="105.6"/></g><g class="pv-x" stroke-width="2.4" stroke-linecap="round"><line x1="114.4" y1="114.4" x2="127.6" y2="127.6"/><line x1="127.6" y1="114.4" x2="114.4" y2="127.6"/></g><g class="pv-x" stroke-width="2.4" stroke-linecap="round"><line x1="92.4" y1="136.4" x2="105.6" y2="149.6"/><line x1="105.6" y1="136.4" x2="92.4" y2="149.6"/></g><g class="pv-x" stroke-width="2.4" stroke-linecap="round"><line x1="136.4" y1="92.4" x2="149.6" y2="105.6"/><line x1="149.6" y1="92.4" x2="136.4" y2="105.6"/></g><circle class="pv-o" cx="55.0" cy="55.0" r="6.6" stroke-width="2.4" fill="none"/><circle class="pv-o" cx="77.0" cy="121.0" r="6.6" stroke-width="2.4" fill="none"/><circle class="pv-o" cx="121.0" cy="77.0" r="6.6" stroke-width="2.4" fill="none"/><circle class="pv-o" cx="143.0" cy="143.0" r="6.6" stroke-width="2.4" fill="none"/><circle class="pv-o" cx="55.0" cy="121.0" r="6.6" stroke-width="2.4" fill="none"/><circle class="pv-target" cx="143.0" cy="55.0" r="7.3" fill="none" stroke-width="1.8" stroke-dasharray="3 2.6"/><rect class="pv-last" x="47.1" y="113.1" width="15.8" height="15.8" rx="4.4" fill="none" stroke-width="1.6"/></svg>
@@ -1244,6 +1367,26 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
   <section class="view" id="viewGame" hidden>
   <div class="layout">
     <div>
+      <section class="puzhud" id="puzHud" hidden>
+        <div class="top">
+          <h3 id="puzHudTitle">Puzzle</h3>
+          <span class="badge" id="puzHudKind">Forced win</span>
+        </div>
+        <p class="obj" id="puzHudObj">Find the forced win.</p>
+        <div class="meta">
+          <span>Attempts <b id="puzHudTries">0</b></span>
+          <span>Time <b id="puzHudTimer">0:00</b></span>
+          <span id="puzHudSource"></span>
+        </div>
+        <p class="st" id="puzHudStatus"></p>
+        <div class="sol" id="puzHudSolution" hidden></div>
+        <div class="acts">
+          <button class="btn sm" id="puzShowSol">Show solution</button>
+          <button class="btn sm" id="puzReplaySol" hidden>Replay solution</button>
+          <button class="btn sm" id="puzResetBtn">Reset puzzle</button>
+          <button class="btn sm" id="puzExitBtn">Exit puzzle</button>
+        </div>
+      </section>
       <section class="card">
         <div class="infobar">
           <div class="players">
@@ -1371,9 +1514,19 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
       <p id="dailyInfo" style="margin:0 0 10px;color:var(--text-2)">Loading…</p>
       <button class="btn primary" id="dailyStart">Start today's challenge</button>
     </div>
+    <div class="card card-pad" style="margin-bottom:12px">
+      <h2 class="card-title">Generate Puzzles</h2>
+      <p class="hintline" style="margin-top:0">Build your own puzzles on this device. Candidate positions are searched by the same forcing solver the engine uses, and only positions with a proven forced win are kept. Every accepted puzzle is saved the moment it is found.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn primary" id="genOpenBtn">Open generator</button>
+        <button class="btn" id="genExportBtn">Export JSON</button>
+        <button class="btn" id="genClearBtn">Clear generated</button>
+      </div>
+      <p class="hintline" id="genBankLine" style="margin-bottom:0">No generated puzzles yet.</p>
+    </div>
     <div class="card card-pad">
       <h2 class="card-title">Puzzle Bank <span id="puzProgress"></span></h2>
-      <p class="hintline" style="margin-top:0">Every puzzle below is a real engine position whose solution was verified by the VCF/VCT solver. X is to move and has a forced win.</p>
+      <p class="hintline" style="margin-top:0">Every puzzle below is a real engine position whose solution was verified by the VCF/VCT solver. The side to move &mdash; X or O &mdash; has a forced win.</p>
       <div class="puzgrid" id="puzGrid"></div>
     </div>
   </section>
@@ -1528,6 +1681,66 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
       <div id="cmpBody"><p class="empty-note">Running…</p></div>
     </div>
     <div class="modal-foot"><button class="btn primary" data-close>Close</button></div>
+  </div>
+</div>
+
+<!-- ===================== PUZZLE GENERATOR MODAL ===================== -->
+<div class="overlay" id="genOverlay" role="dialog" aria-modal="true" aria-labelledby="genTitle">
+  <div class="modal wide">
+    <div class="modal-head">
+      <div><p class="modal-kicker">Puzzle lab</p><h2 id="genTitle">Generate Puzzles</h2></div>
+      <span class="gen-live" id="genLive"><i></i><b>Worker ready</b></span>
+      <button class="btn icon ghost" id="genCloseX" aria-label="Close">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="gen-overline"><span>Live verification session</span><span>Mate-in-2 cap</span></div>
+      <div class="gen-activity" aria-hidden="true"><span></span></div>
+      <p class="hintline" style="margin-top:0">Positions are built around the centre, then handed to the forcing solver. A position is kept only when the engine proves a forced win in one or two moves. Accepted puzzles are saved straight away.</p>
+
+      <div class="set-row" id="genTimeRow">
+        <div><div class="label">Generation time</div><div class="hint">How long this session may run</div></div>
+        <div class="seg" id="genTimeSeg" role="group" aria-label="Generation time">
+          <button data-v="30000">30 sec</button><button data-v="60000" aria-pressed="true">1 min</button><button data-v="300000">5 min</button><button data-v="600000">10 min</button><button data-v="1800000">30 min</button><button data-v="0">Unlimited</button>
+        </div>
+      </div>
+      <div class="set-row" id="genTargetRow" style="margin-bottom:14px">
+        <div><div class="label">Target puzzles</div><div class="hint">Counts only puzzles that were saved</div></div>
+        <div class="seg" id="genTargetSeg" role="group" aria-label="Target puzzles">
+          <button data-v="5">5</button><button data-v="10" aria-pressed="true">10</button><button data-v="25">25</button><button data-v="50">50</button><button data-v="100">100</button><button data-v="0">Unlimited</button>
+        </div>
+      </div>
+
+      <div class="gen-lay">
+        <div class="gen-stage">
+          <div class="gen-board idle" id="genBoard" role="img" aria-label="Candidate position being generated">
+            <svg viewBox="0 0 15 15" aria-hidden="true"><g id="genBoardG"></g></svg>
+          </div>
+        </div>
+        <div style="min-width:0">
+          <p class="gen-phase" id="genPhase" aria-live="polite"><span class="gen-dot"></span><b id="genPhaseText">Ready</b></p>
+          <div class="gen-steps" id="genSteps" aria-label="Generation stages"><span class="gen-step">Build</span><span class="gen-step">Prove</span><span class="gen-step">Save</span></div>
+          <div class="gen-stats">
+            <div class="gen-stat"><div class="l">Attempts</div><div class="v mono" id="genAttempts">0</div></div>
+            <div class="gen-stat acc"><div class="l">Accepted</div><div class="v mono" id="genAccepted">0</div></div>
+            <div class="gen-stat"><div class="l">Rejected</div><div class="v mono" id="genRejected">0</div></div>
+            <div class="gen-stat"><div class="l">Duplicates</div><div class="v mono" id="genDuplicates">0</div></div>
+            <div class="gen-stat"><div class="l">Elapsed</div><div class="v mono" id="genElapsed">0:00</div></div>
+            <div class="gen-stat"><div class="l">Nodes</div><div class="v mono" id="genNodes">0</div></div>
+            <div class="gen-stat"><div class="l">Solver depth</div><div class="v mono" id="genDepth">0</div></div>
+            <div class="gen-stat"><div class="l">Sequence</div><div class="v mono" id="genSeqLen">&mdash;</div></div>
+          </div>
+          <p class="gen-reason" id="genReason">Choose a time and a target, then press Start.</p>
+          <div class="gen-saved none" id="genSaved"><span id="genSavedText">No puzzles saved yet</span></div>
+          <p class="gen-note" id="genNote" hidden></p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="genExportBtn2">Export JSON</button>
+      <button class="btn" id="genCloseBtn">Close</button>
+      <button class="btn danger" id="genStopBtn" hidden>&#9632; Stop</button>
+      <button class="btn primary" id="genStartBtn">Start</button>
+    </div>
   </div>
 </div>
 

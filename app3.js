@@ -482,8 +482,9 @@
 
   function updateInteractivity(b) {
     var interactive = G.editing || (G.puzzle && G.puzzle.active) || humanToMove() ||
-      (G.analysisMode && G.status === 'playing') || G.mode === 'analysis';
-    var ghost = G.editing ? editTool : sName(sideToMove()).toLowerCase();
+      (G.puzzle ? false : ((G.analysisMode && G.status === 'playing') || G.mode === 'analysis'));
+    var ghost = G.editing ? editTool
+      : (G.puzzle ? sName(G.puzzle.side).toLowerCase() : sName(sideToMove()).toLowerCase());
     boardEl.dataset.ghost = (ghost === 'x' || ghost === 'o') ? ghost : 'x';
     for (var i = 0; i < LEN; i++) {
       var el = cellEls[i]; if (!el) continue;
@@ -503,7 +504,7 @@
     });
   }
   function refreshThreats() {
-    if (!S.threatMap) { threats = []; return; }
+    if (!S.threatMap || (G && G.puzzle)) { threats = []; return; }
     var tok = ++threatToken;
     ask({ type: 'threats', moves: movesUpTo(G.view), root: rootPayload(), minLevel: 2 })
       .then(function (r) { if (tok === threatToken) { threats = r || []; renderPosition(); } })
@@ -511,6 +512,7 @@
   }
 
   function applyHeat(b) {
+    if (G && G.puzzle) return;
     if (!S.heatmap || !current || !current.candidates || !current.candidates.length) return;
     var cs = current.candidates.filter(function (c) { return !b[c.idx]; });
     if (!cs.length) return;
@@ -525,6 +527,7 @@
   function drawArrows(lastMove) {
     var svg = $('arrows'); if (!svg) return;
     var parts = '';
+    if (G && G.puzzle) { svg.innerHTML = ''; return; }   // no best-move arrow in puzzle mode
     var best = (S.bestMove && current && current.best != null && !displayBoard()[current.best]) ? current.best : null;
     if (best != null) {
       var bx = (best % SIZE) + .5, by = ((best / SIZE) | 0) + .5;
@@ -561,6 +564,7 @@
   }
 
   function setEvalDisplay(res) {
+    if (G && G.puzzle) { $('mateBadge').hidden = true; return; }   // 24: nothing to show
     var p = res ? dp(res.score) : 0;
     var forced = res && res.mateIn != null;
     /* bar: O fills from the top. X positive => smaller O share. */
@@ -697,6 +701,11 @@
 
   function runAnalysis(force, overrideMs) {
     if (!G || G.editing) return;
+    /* 24: no analysis of any kind while a puzzle is open. The engine is still
+       used to CHECK a move (puzzleGuess asks it directly), but the automatic
+       analysis pipeline — which feeds the eval bar, graph, best move, PV and
+       candidate list — is switched off entirely rather than merely hidden. */
+    if (G.puzzle) { cancelAnalysis('puzzle-mode'); setSearching(false); return; }
     if (!S.auto && !force) { setEngineStatus('Auto analysis off'); return; }
     var key = posKey(G.view), tok = ++analysisToken;
     var b = boardAt(G.view);
@@ -868,7 +877,8 @@
     $('metaMoves').textContent = String(line().length);
     $('histCount').textContent = String(line().length);
     var st = $('statusText'); st.className = '';
-    if (G.puzzle && G.puzzle.active) st.textContent = 'Puzzle: find the winning move for X';
+    if (G.puzzle && G.puzzle.active) st.textContent = 'Puzzle — find the forced win for ' + sName(G.puzzle.side);
+    else if (G.puzzle) st.textContent = 'Puzzle — ' + (G.puzzle.solved ? 'solved' : 'solution shown');
     else if (G.status === 'won') {
       var w = G.winner;
       st.textContent = sName(w) + ' wins';
@@ -878,10 +888,17 @@
     else if (controllerOf(stm) === 'ai') st.textContent = 'AI thinking (' + sName(stm) + ')';
     else if (G.mode === 'local') st.textContent = 'Player ' + sName(stm) + ' to move';
     else st.textContent = 'Your turn (' + sName(stm) + ')';
-    $('modeBadge').hidden = !G.analysisMode;
+    $('modeBadge').hidden = !G.analysisMode || !!G.puzzle;
+    /* 24: the controls that would reveal engine judgement are disabled, not
+       merely hidden, so they cannot be reached by keyboard either. */
+    var puz = !!G.puzzle;
+    ['hintBtn', 'analysisBtn', 'deepBtn', 'cmpBtn', 'reportBtn', 'whatIfBtn'].forEach(function (id) {
+      var el = $(id); if (el) el.disabled = puz;
+    });
+    if (puz) { $('newBtn').disabled = false; }
     $('undoBtn').disabled = !G.main.length || !!G.variation;
     $('redoBtn').disabled = !G.redo.length || !!G.variation;
-    $('hintBtn').disabled = !(G.status === 'playing' && !G.variation && G.view === G.main.length);
+    $('hintBtn').disabled = !!G.puzzle || !(G.status === 'playing' && !G.variation && G.view === G.main.length);
     $('analysisBtn').setAttribute('aria-pressed', String(!!G.analysisMode));
     $('whatIfBtn').setAttribute('aria-pressed', String(!!G.whatIf));
     $('mainLineBtn').hidden = !G.variation;
@@ -926,8 +943,8 @@
 
   var graphPts = [];
   function refreshGraph() {
-    $('graphCard').hidden = !S.evalBar || !S.graph;
-    if (!S.evalBar || !S.graph || !G) return;
+    $('graphCard').hidden = !S.evalBar || !S.graph || !!(G && G.puzzle);
+    if (!S.evalBar || !S.graph || !G || G.puzzle) return;
     var g = $('graph'), W = 320, H = 96, pad = 6;
     graphPts = [];
     var rootV = G.rootEval != null ? G.rootEval : (!G.root ? 0 : null);
@@ -1041,6 +1058,7 @@
     cancelAllSearches('new-game');
     analysisToken++; explainToken++; threatToken++;
     setSearching(false);
+    exitPuzzleChrome();
     G = makeGame(mode, opts);
     if (opts && opts.moves) {
       opts.moves.forEach(function (idx, k) {
@@ -1643,31 +1661,577 @@
   };
 
   /* =======================================================================
-     PUZZLES
+     PUZZLE BANK
+     -----------------------------------------------------------------------
+     Three independent sources are merged into one list:
+
+       BUILTIN_PUZZLES      shipped inside the build (puzzles.json)
+       CONTRIBUTED_PUZZLES  imported / shared banks (empty until one is loaded)
+       GENERATED_PUZZLES    produced locally by the generator, persisted to
+                            localStorage under xo5.generatedPuzzles3
+
+     MERGED_PUZZLES is the deduplicated union, builtins first so that the
+     index of a bundled puzzle never shifts when the local bank grows.
+
+     Backward compatibility: a bundled puzzle is the old three-field shape
+     { moves, key, len }. Everything below treats the extra fields as
+     optional and DERIVES what it can — the side to move is a pure function
+     of stone parity, because `moves` is replayed alternately starting with
+     X. Old puzzle objects therefore keep working untouched.
      ======================================================================= */
-  var PUZZLES = [];
-  try { PUZZLES = JSON.parse($('puzzleSrc').textContent || '[]') || []; } catch (e) { PUZZLES = []; }
+  var GEN_BANK_KEY = 'generatedPuzzles3';        // -> localStorage "xo5.generatedPuzzles3"
+
+  var BUILTIN_PUZZLES = [];
+  try { BUILTIN_PUZZLES = JSON.parse($('puzzleSrc').textContent || '[]') || []; } catch (e) { BUILTIN_PUZZLES = []; }
+  var CONTRIBUTED_PUZZLES = [];
+  var GENERATED_PUZZLES = [];
+  var MERGED_PUZZLES = [];
+  /* PUZZLES is an ALIAS for MERGED_PUZZLES, never a copy: the merged list is
+     rebuilt in place so every existing holder of this reference stays live. */
+  var PUZZLES = MERGED_PUZZLES;
   var PUZ_STATE = load('puz3', {});
+
+  /* Side to move, derived from parity. Works for old and new puzzle objects. */
+  function puzzleSide(p) {
+    if (!p || !p.moves) return X;
+    if (p.sideToMove === 'O') return O;
+    if (p.sideToMove === 'X') return X;
+    return p.moves.length % 2 === 0 ? X : O;
+  }
+  function puzzleSideName(p) { return puzzleSide(p) === X ? 'X' : 'O'; }
+
+  /* Canonical dedupe key — MUST stay identical to genCanonKey() in worker3.js.
+     Sorted cell+owner pairs plus the side to move, so the same board with the
+     opposite side to move is correctly treated as a DIFFERENT puzzle. */
+  function canonKeyOf(p) {
+    if (!p || !p.moves) return null;
+    var parts = [], i;
+    for (i = 0; i < p.moves.length; i++) parts.push(p.moves[i] + (i % 2 === 0 ? 'x' : 'o'));
+    parts.sort();
+    return parts.join('.') + '#' + puzzleSideName(p);
+  }
+
+  /* Rebuild MERGED_PUZZLES in place (identity-preserving). */
+  function rebuildMergedPuzzles() {
+    var seen = Object.create(null), out = [];
+    function add(list) {
+      for (var i = 0; i < list.length; i++) {
+        var p = list[i]; if (!p || !p.moves) continue;
+        var k = canonKeyOf(p);
+        if (k && seen[k]) continue;
+        if (k) seen[k] = 1;
+        out.push(p);
+      }
+    }
+    add(BUILTIN_PUZZLES); add(CONTRIBUTED_PUZZLES); add(GENERATED_PUZZLES);
+    MERGED_PUZZLES.length = 0;
+    Array.prototype.push.apply(MERGED_PUZZLES, out);
+    return MERGED_PUZZLES;
+  }
+
+  /* ---------------- generated-bank persistence ---------------- */
+  /* persistOk === false means localStorage refused us. Accepted puzzles are
+     STILL kept in memory and still playable; the UI says so plainly rather
+     than claiming a save that did not happen. */
+  var persistOk = true, persistError = null, persistedN = 0;
+
+  function loadGeneratedBank() {
+    var raw = load(GEN_BANK_KEY, null);
+    if (!Array.isArray(raw)) { persistedN = 0; return []; }
+    var out = [], i;
+    for (i = 0; i < raw.length; i++) {
+      var v = validateGeneratedPuzzle(raw[i]);
+      if (v.ok) out.push(v.puzzle);              // a corrupt entry is dropped, never fatal
+    }
+    persistedN = out.length;
+    return out;
+  }
+
+  function writeGeneratedBank() {
+    var ok = store(GEN_BANK_KEY, GENERATED_PUZZLES);
+    if (!ok) {
+      persistOk = false;
+      persistError = 'Local storage is unavailable or full.';
+      return false;
+    }
+    /* The write succeeded, so the number on disk is exactly what we sent. */
+    persistOk = true; persistError = null;
+    persistedN = GENERATED_PUZZLES.length;
+    return true;
+  }
+
+  /* ---------------- validation ----------------
+     Structural + legality checks, cheap enough for the main thread.
+     The forced-win PROOF comes from the worker's solveForcing() run, but
+     where a claim can be re-proved without a search we re-prove it here
+     rather than taking the worker's word for it. */
+  function validateGeneratedPuzzle(p) {
+    if (!p || typeof p !== 'object') return { ok: false, reason: 'not an object' };
+    if (!Array.isArray(p.moves) || !p.moves.length) return { ok: false, reason: 'no moves' };
+    if (p.moves.length >= LEN) return { ok: false, reason: 'too many stones' };
+    if (p.len !== 1 && p.len !== 3) return { ok: false, reason: 'unsupported solution length' };
+    if (typeof p.key !== 'number' || p.key < 0 || p.key >= LEN || (p.key | 0) !== p.key) return { ok: false, reason: 'bad key' };
+
+    var b = new Int8Array(LEN), i, idx, player;
+    for (i = 0; i < p.moves.length; i++) {
+      idx = p.moves[i];
+      if (typeof idx !== 'number' || (idx | 0) !== idx || idx < 0 || idx >= LEN) return { ok: false, reason: 'illegal cell' };
+      if (b[idx]) return { ok: false, reason: 'overwritten cell' };
+      player = i % 2 === 0 ? X : O;
+      b[idx] = player;
+      if (E.winningLineAt(b, idx, player)) return { ok: false, reason: 'position already won' };
+    }
+    if (b[p.key]) return { ok: false, reason: 'solution square is occupied' };
+
+    var side = puzzleSide(p);
+    var declared = p.moves.length % 2 === 0 ? X : O;
+    if (side !== declared) return { ok: false, reason: 'side to move contradicts stone parity' };
+
+    /* Re-prove what can be proved without a search. */
+    var st = new E.State();
+    for (i = 0; i < p.moves.length; i++) st.play(p.moves[i], i % 2 === 0 ? X : O);
+    var opp = side === X ? O : X;
+    var proof = 'worker-verified';
+
+    if (p.len === 1) {
+      st.play(p.key, side);
+      var five = E.winningLineAt(st.board, p.key, side);
+      st.undo();
+      if (!five) return { ok: false, reason: 'claimed win in 1 does not make five' };
+      proof = 'reproved';
+    } else if (Array.isArray(p.seq) && p.seq.length === 3 && p.seq[0] === p.key) {
+      /* Forced win in 2. The defender's reply is forced exactly when the
+         attacker already threatens five after the first move: they must block
+         it, and if there are two such squares they cannot block both. */
+      st.play(p.seq[0], side);
+      var wins = E.winningCells(st, side);
+      if (wins.length >= 1 && st.board[p.seq[1]] === 0) {
+        st.play(p.seq[1], opp);
+        if (!E.winningLineAt(st.board, p.seq[1], opp) && st.board[p.seq[2]] === 0) {
+          st.play(p.seq[2], side);
+          if (E.winningLineAt(st.board, p.seq[2], side)) {
+            /* forced iff the defender could not cover every threat */
+            if (wins.length >= 2 || p.seq[1] === wins[0]) proof = 'reproved';
+          }
+          st.undo();
+        }
+        st.undo();
+      }
+      st.undo();
+    }
+
+    var norm = {
+      moves: p.moves.slice(),
+      key: p.key,
+      len: p.len,
+      sideToMove: side === X ? 'X' : 'O',
+      source: p.source || 'generated-local',
+      generatedAt: p.generatedAt || new Date().toISOString(),
+      elapsedMs: typeof p.elapsedMs === 'number' ? p.elapsedMs : null,
+      nodes: typeof p.nodes === 'number' ? p.nodes : null,
+      maxPly: typeof p.maxPly === 'number' ? p.maxPly : 3,
+      solverVersion: p.solverVersion || 'engine3.solveForcing/1',
+      proof: proof
+    };
+    if (Array.isArray(p.seq)) norm.seq = p.seq.slice();
+    norm.canon = canonKeyOf(norm);
+    return { ok: true, puzzle: norm };
+  }
+
+  /* =======================================================================
+     DURABLE SAVE PIPELINE
+     -----------------------------------------------------------------------
+        worker -> accepted -> validate -> canonical dedupe -> PERSIST NOW
+                           -> bank update -> UI update -> keep generating
+
+     This runs once per accepted puzzle and is completely independent of the
+     generation-completion event. There is no end-of-session flush, because
+     there is nothing left to flush: by the time a session ends, every puzzle
+     it produced is already on disk. A crash, a Stop, a timeout or a dead
+     Worker therefore cannot cost more than the single candidate in flight.
+     ======================================================================= */
+  function saveGeneratedPuzzle(p) {
+    var v = validateGeneratedPuzzle(p);
+    if (!v.ok) return { ok: false, stage: 'invalid', reason: v.reason };
+
+    var key = v.puzzle.canon, i;
+    for (i = 0; i < GENERATED_PUZZLES.length; i++) {
+      if (canonKeyOf(GENERATED_PUZZLES[i]) === key) return { ok: false, stage: 'duplicate', reason: 'already in the local bank' };
+    }
+    for (i = 0; i < BUILTIN_PUZZLES.length; i++) {
+      if (canonKeyOf(BUILTIN_PUZZLES[i]) === key) return { ok: false, stage: 'duplicate', reason: 'already bundled with the build' };
+    }
+    for (i = 0; i < CONTRIBUTED_PUZZLES.length; i++) {
+      if (canonKeyOf(CONTRIBUTED_PUZZLES[i]) === key) return { ok: false, stage: 'duplicate', reason: 'already contributed' };
+    }
+
+    /* In memory FIRST. If the write then fails the puzzle is still accepted,
+       still merged, still playable and still exportable — it is only the disk
+       copy that is missing, and the UI is told to say exactly that. */
+    GENERATED_PUZZLES.push(v.puzzle);
+    var persisted = writeGeneratedBank();
+    if (!persisted) {
+      /* A failed write must never truncate what was already on disk, so the
+         previously stored entries are left exactly as they were. */
+      rebuildMergedPuzzles();
+      return { ok: true, stage: 'accepted', persisted: false, reason: persistError, puzzle: v.puzzle };
+    }
+    rebuildMergedPuzzles();
+    return { ok: true, stage: 'persisted', persisted: true, puzzle: v.puzzle };
+  }
+
+  /* How many generated puzzles are genuinely on disk right now. Updated only
+     by a write that actually succeeded, so it can never overstate. */
+  function persistedCount() { return persistedN; }
+
+  GENERATED_PUZZLES = loadGeneratedBank();
+  rebuildMergedPuzzles();
+
+  /* =======================================================================
+     GENERATOR CHANNEL
+     -----------------------------------------------------------------------
+     A THIRD worker, independent of the AI and Analysis pools, so that a long
+     generation session never competes with the board for engine time and can
+     be terminated on its own without disturbing a game in progress.
+
+     Where no real Worker exists (older browsers, and the headless test
+     suite), the very same worker3.js source is executed on the main thread
+     against a stand-in `self`. That is not a reimplementation: it is the
+     identical generator, driven through the identical message protocol, just
+     with shorter slices so the page keeps painting between them.
+     ======================================================================= */
+  var PG = { worker: null, mode: 'none', inline: false, dead: false };
+
+  function makeInlineGenerator(onMessage) {
+    var wrkEl = $('workerSrc'); if (!wrkEl) return null;
+    var host = {
+      XOEngine: E,
+      GEN_SLICE_MS: 12,                       // short slices: this is the UI thread
+      postMessage: function (m) { onMessage({ data: m }); }
+    };
+    try { (new Function('self', wrkEl.textContent))(host); }
+    catch (e) { return null; }
+    if (typeof host.onmessage !== 'function') return null;
+    var dead = false;
+    return {
+      inline: true,
+      postMessage: function (msg) {
+        if (dead) return;
+        setTimeout(function () { if (!dead) try { host.onmessage({ data: msg }); } catch (e) {} }, 0);
+      },
+      terminate: function () {
+        if (dead) return;
+        try { host.onmessage({ data: { type: 'stopGenerate' } }); } catch (e) {}
+        dead = true;
+      }
+    };
+  }
+
+  function initGenWorker() {
+    if (PG.worker && !PG.dead) return PG.worker;
+    PG.dead = false;
+    var url = getWorkerBlobUrl();
+    if (url) {
+      try {
+        var w = new Worker(url);
+        w.onmessage = onGenMessage;
+        w.onerror = function () { onGenWorkerFailure('the generator worker crashed'); };
+        PG.worker = w; PG.mode = 'worker'; PG.inline = false;
+        return w;
+      } catch (e) { /* fall through to the inline generator */ }
+    }
+    var inline = makeInlineGenerator(onGenMessage);
+    if (!inline) { PG.worker = null; PG.mode = 'none'; return null; }
+    PG.worker = inline; PG.mode = 'main'; PG.inline = true;
+    return inline;
+  }
+
+  function killGenWorker() {
+    if (PG.worker) { try { PG.worker.terminate(); } catch (e) {} }
+    PG.worker = null; PG.mode = 'none'; PG.dead = true;
+  }
+
+  function genPost(msg) {
+    var w = initGenWorker();
+    if (!w) return false;
+    try { w.postMessage(msg); return true; }
+    catch (e) { return false; }
+  }
+
+  /* =======================================================================
+     GENERATION SESSION
+     -----------------------------------------------------------------------
+     GEN_TOKEN is the generation identity. Every session gets a fresh one and
+     every inbound worker message is checked against it, so a message that
+     was already in flight when Stop was pressed is dropped instead of being
+     counted, saved or drawn. Stop increments the token BEFORE it asks the
+     worker to stop, which is what makes "late results are ignored" true
+     rather than merely likely.
+     ======================================================================= */
+  var GEN_TOKEN = 0;
+  var GS = null;                     // active session, or null
+
+  var GEN_TIME_OPTIONS = [
+    { v: 30000, label: '30 sec' },
+    { v: 60000, label: '1 min' },
+    { v: 300000, label: '5 min' },
+    { v: 600000, label: '10 min' },
+    { v: 1800000, label: '30 min' },
+    { v: 0, label: 'Unlimited' }
+  ];
+  var GEN_TARGET_OPTIONS = [
+    { v: 5, label: '5' }, { v: 10, label: '10' }, { v: 25, label: '25' },
+    { v: 50, label: '50' }, { v: 100, label: '100' }, { v: 0, label: 'Unlimited' }
+  ];
+  var genSettings = load('genSettings3', { durationMs: 60000, target: 10 });
+  if (!GEN_TIME_OPTIONS.some(function (o) { return o.v === genSettings.durationMs; })) genSettings.durationMs = 60000;
+  if (!GEN_TARGET_OPTIONS.some(function (o) { return o.v === genSettings.target; })) genSettings.target = 10;
+
+  function newSession() {
+    return {
+      token: ++GEN_TOKEN,
+      running: true,
+      startedAt: Date.now(),
+      durationMs: genSettings.durationMs,      // 0 = unlimited
+      target: genSettings.target,              // 0 = unlimited
+      attempts: 0, accepted: 0, rejected: 0, duplicates: 0,
+      nodes: 0, solverDepth: 0, len: null,
+      savedThisSession: 0, sideCount: { X: 0, O: 0 }, lenCount: {},
+      phase: 'Ready', reason: null,
+      candidateMoves: null, candidateSide: null,
+      elapsedMs: 0, endReason: null, ticker: null
+    };
+  }
+
+  function startGeneration() {
+    stopGeneration('restart', true);           // never two sessions at once
+    GS = newSession();
+    PG.dead = false;
+    /* any outstanding stop belongs to a session that is now history */
+    stopPending = null;
+    var ok = genPost({
+      type: 'generatePuzzle',
+      id: GS.token,
+      seed: (Date.now() ^ (Math.random() * 0x7FFFFFFF)) | 0,
+      durationMs: GS.durationMs || null,
+      /* The TARGET is enforced here, not in the worker, and deliberately so:
+         the target counts puzzles that were accepted AND successfully
+         persisted, and only the main thread knows which of the worker's
+         acceptances survived validation, deduplication and the disk write.
+         Delegating it would let the session stop one or two puzzles short
+         whenever a candidate turned out to duplicate the existing bank. */
+      targetAccepted: null,
+      maxAttempts: 300,
+      maxPly: 3,
+      nodeCap: 15000,
+      candidateTimeMs: 400
+    });
+    if (!ok) {
+      GS.running = false; GS.phase = 'Stopped';
+      GS.reason = 'The generator could not be started in this browser.';
+      GS.endReason = 'error';
+      renderGenerator();
+      return false;
+    }
+    GS.phase = 'Generating position';
+    GS.ticker = setInterval(function () {
+      if (!GS || !GS.running) return;
+      GS.elapsedMs = Date.now() - GS.startedAt;
+      renderGenClock();
+    }, 200);
+    renderGenerator();
+    return true;
+  }
+
+  /* Outstanding graceful-stop request. Tracked OUTSIDE the generation token,
+     because the token is bumped the moment Stop is pressed and would
+     otherwise cause us to discard the worker's own acknowledgement and
+     terminate a worker that had in fact stopped politely. */
+  var stopPending = null;
+
+  function stopGeneration(reason, silent) {
+    if (!GS) return;
+    var s = GS;
+    /* A session that has already finished has nothing to stop. Sending it the
+       graceful-stop handshake anyway is actively harmful: the worker has no
+       such session left, so it never acknowledges, and the termination
+       deadline then fires during whatever session started in the meantime and
+       kills a perfectly healthy worker. */
+    if (!s.running) {
+      if (!s.endReason) s.endReason = reason || 'stopped';
+      if (silent) { GS = null; return; }
+      renderGenerator();
+      return;
+    }
+    /* 1 & 2: mark cancelled and move the token on BEFORE talking to the
+       worker, so anything already in flight is stale by definition. */
+    GEN_TOKEN++;
+    s.running = false;
+    if (s.ticker) { clearInterval(s.ticker); s.ticker = null; }   // 4: timers cancelled
+    s.elapsedMs = Date.now() - s.startedAt;
+    if (!s.endReason) s.endReason = reason || 'stopped';
+    s.phase = s.endReason === 'target' ? 'Completed' : 'Stopped';
+
+    /* 3: ask the worker to stop, then hold it to a deadline. A worker that
+       does not acknowledge is terminated outright — a generation that cannot
+       be stopped must never be left running invisibly. It is recreated
+       lazily by initGenWorker() the next time one is needed. */
+    var asked = genPost({ type: 'stopGenerate', id: s.token });
+    if (asked) {
+      stopPending = { token: s.token };
+      setTimeout(function () {
+        if (stopPending && stopPending.token === s.token) { stopPending = null; killGenWorker(); }
+      }, 1200);
+    } else {
+      killGenWorker();
+    }
+    if (silent) { GS = null; return; }
+    renderGenerator();
+  }
+
+  function onGenWorkerFailure(msg) {
+    killGenWorker();
+    /* 7 & 33: everything already persisted stays persisted. A dead worker
+       ends the session, it does not roll anything back. */
+    if (GS) {
+      GEN_TOKEN++;
+      GS.running = false;
+      if (GS.ticker) { clearInterval(GS.ticker); GS.ticker = null; }
+      GS.phase = 'Stopped';
+      GS.endReason = 'worker-error';
+      GS.reason = msg;
+      renderGenerator();
+    }
+    showError(msg + ' — puzzles already saved are safe.');
+  }
+
+  function onGenMessage(e) {
+    var d = (e && e.data) || {};
+    /* A graceful stop was acknowledged: the worker is alive and idle, so it
+       is kept rather than terminated. Checked before the token test because
+       Stop has already invalidated the token by this point. */
+    if (d.kind === 'generated-done' && stopPending && d.id === stopPending.token) stopPending = null;
+
+    /* 5: a message from a cancelled generation is dropped outright.
+       Two conditions, and BOTH are needed. The first says the message belongs
+       to this session; the second says this session is still the live one.
+       A session's own token never changes, so testing only the first would
+       happily accept results that arrived after Stop — which is exactly the
+       bug this guard exists to prevent. Stop bumps GEN_TOKEN, so from that
+       instant GS.token !== GEN_TOKEN and everything still in flight is
+       dropped, counted nowhere and saved nowhere. */
+    if (!GS || d.id !== GS.token || GS.token !== GEN_TOKEN) return;
+    if (d.kind === 'error') { onGenWorkerFailure(d.message || 'generator error'); return; }
+
+    var pr = d.progress || {};
+    GS.attempts = pr.attempts || 0;
+    GS.rejected = pr.rejected || 0;
+    GS.duplicates = (pr.duplicates || 0) + (GS.localDupes || 0);
+    GS.nodes = pr.nodes || 0;
+    GS.solverDepth = pr.solverDepth || 0;
+    GS.len = pr.len == null ? null : pr.len;
+    GS.elapsedMs = pr.elapsedMs || (Date.now() - GS.startedAt);
+    if (pr.phase) GS.phase = pr.phase;
+    if (pr.reason !== undefined) GS.reason = pr.reason;
+    if (pr.moves) { GS.candidateMoves = pr.moves; GS.candidateSide = pr.side; }
+
+    if (d.kind === 'accepted') {
+      /* 6 (§6): persist RIGHT NOW, before anything else happens. */
+      var res = saveGeneratedPuzzle(d.puzzle);
+      if (res.ok) {
+        GS.accepted++;
+        GS.savedThisSession++;
+        var sn = res.puzzle.sideToMove;
+        GS.sideCount[sn] = (GS.sideCount[sn] || 0) + 1;
+        GS.lenCount[res.puzzle.len] = (GS.lenCount[res.puzzle.len] || 0) + 1;
+        GS.phase = 'Accepted';
+        GS.reason = (res.persisted ? 'Accepted — ' : 'Accepted (not saved) — ') +
+          (res.puzzle.len === 1 ? 'Forced win in 1' : 'Forced win in 2') + ' for ' + sn;
+        GS.lastAccepted = res.puzzle;
+        renderPuzzles();
+        /* Target reached — counted in persisted puzzles, not in worker
+           acceptances. Render the accepted state first so the last puzzle is
+           visibly credited before the session closes. */
+        if (GS.target && GS.accepted >= GS.target) {
+          renderGenerator();
+          stopGeneration('target');
+          return;
+        }
+      } else if (res.stage === 'duplicate') {
+        GS.localDupes = (GS.localDupes || 0) + 1;
+        GS.duplicates = (pr.duplicates || 0) + GS.localDupes;
+        GS.phase = 'Rejected';
+        GS.reason = 'Rejected — duplicate';
+      } else {
+        GS.rejected++;
+        GS.phase = 'Rejected';
+        GS.reason = 'Rejected — ' + (res.reason || 'invalid puzzle');
+      }
+      renderGenerator();
+      return;
+    }
+
+    if (d.kind === 'generated-done') {
+      GEN_TOKEN++;                                  // no further message is ours
+      GS.running = false;
+      if (GS.ticker) { clearInterval(GS.ticker); GS.ticker = null; }
+      GS.endReason = d.reason;
+      GS.phase = d.reason === 'stopped' ? 'Stopped' : 'Completed';
+      renderGenerator();
+      renderPuzzles();
+      return;
+    }
+
+    renderGenerator();
+  }
 
   function todayIndex() {
     var d = new Date();
     var seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
     return PUZZLES.length ? seed % PUZZLES.length : 0;
   }
+  /* TWO `len` CONVENTIONS LIVE IN THE BANK, and they are not the same.
+     Generated puzzles store the length of the sequence solveForcing() actually
+     returned, which alternates attacker/defender: 1 means the first move makes
+     five, 3 means a forced win in two attacker moves.
+     The bundled puzzles predate that encoding. Re-solving all ten with the
+     current engine gives a sequence exactly two plies longer than the stored
+     value in every case (1->3, 3->5, 5->7), so their `len` is translated
+     rather than trusted. Without this, puzzle 1 would keep being advertised as
+     a "forced win in 1" when the engine proves it is a win in 2 — which is
+     what the old label claimed, and it was wrong. */
+  function puzzleSeqLen(p) {
+    if (!p) return 1;
+    if (p.seq && p.seq.length) return p.seq.length;          // verified sequence wins
+    if (p.source === 'generated-local') return p.len || 1;
+    return (p.len || 1) + 2;                                  // legacy bundled encoding
+  }
+  function puzzleWinIn(p) { return Math.ceil(puzzleSeqLen(p) / 2); }
+  /* G.puzzle.len is ALREADY a true sequence length (startPuzzle translates it
+     once, on the way in), so the active puzzle must not be translated again. */
+  function activeWinIn(p) { return Math.ceil(((p.seq && p.seq.length) ? p.seq.length : p.len) / 2); }
+  function puzzleLabel(p) { return 'Forced win in ' + puzzleWinIn(p); }
   function renderPuzzles() {
     var g = $('puzGrid'); if (!g) return;
+    renderGenBankLine();
     if (!PUZZLES.length) { g.innerHTML = '<p class="empty-note">No puzzles bundled with this build.</p>'; return; }
     g.innerHTML = PUZZLES.map(function (p, i) {
       var solved = PUZ_STATE[i] === 'solved';
+      var side = puzzleSideName(p);
+      var gen = p.source === 'generated-local';
       return '<button class="puz" data-puz="' + i + '"><h4>Puzzle ' + (i + 1) + '</h4>' +
-        '<p>X to move · forced win in ' + Math.ceil(p.len / 2) + '</p>' +
-        (solved ? '<span class="solved">✓ Solved</span>' : '<span style="font-size:11px;color:var(--text-3)">Unsolved</span>') + '</button>';
+        '<p>' + side + ' to move · ' + puzzleLabel(p) + '</p>' +
+        '<span class="tag ' + side.toLowerCase() + '">' + side + '</span>' +
+        (gen ? ' <span class="tag gen">Generated</span>' : '') +
+        (solved ? '<br><span class="solved">✓ Solved</span>'
+                : '<br><span style="font-size:11px;color:var(--text-3)">Unsolved</span>') + '</button>';
     }).join('');
     var solvedN = Object.keys(PUZ_STATE).filter(function (k) { return PUZ_STATE[k] === 'solved'; }).length;
     $('puzProgress').textContent = solvedN + ' / ' + PUZZLES.length;
     var t = todayIndex();
     $('dailyInfo').textContent = PUZZLES.length
-      ? 'Today\'s puzzle is #' + (t + 1) + ' — X to move with a verified forced win in ' + Math.ceil(PUZZLES[t].len / 2) + '.'
+      ? 'Today\'s puzzle is #' + (t + 1) + ' — ' + puzzleSideName(PUZZLES[t]) +
+        ' to move with a verified forced win in ' + puzzleWinIn(PUZZLES[t]) + '.'
       : 'No puzzles available in this build.';
     $('dailyStart').disabled = !PUZZLES.length;
   }
@@ -1676,56 +2240,599 @@
   });
   $('dailyStart').onclick = function () { startPuzzle(todayIndex(), true); };
 
+  /* =======================================================================
+     PUZZLE PLAY MODE
+     -----------------------------------------------------------------------
+     A puzzle is a position plus an objective, and nothing else is on screen.
+     While a puzzle is active the body carries `puzzle-mode`, which removes
+     every analysis surface: eval bar and number, evaluation graph, best-move
+     arrow, candidate list, threat map, heatmap, move quality, explanation,
+     principal variation, engine details, search progress and the whole
+     secondary control row (Hint, Deep Analyze, Compare Moves, …). The engine
+     still runs — it is what checks the player's move — but it reports only
+     "that forces a win" or "that does not". Nothing it knows leaks out.
+
+     Both X and O puzzles are supported. The objective text, the ghost stone,
+     the verification side and the solution replay all read the side from the
+     puzzle rather than assuming X.
+     ======================================================================= */
+  var puzTimerHandle = null;
+
+  function puzzleActive() { return !!(G && G.puzzle && G.puzzle.active); }
+  function puzzleOpen() { return !!(G && G.puzzle); }
+
   function startPuzzle(i, daily) {
     var p = PUZZLES[i]; if (!p) return;
+    var side = puzzleSide(p);
     goRoute('play', true);
     startGame('analysis', { moves: p.moves.slice() });
-    G.puzzle = { i: i, active: true, tries: 0, daily: !!daily, key: p.key, len: p.len };
+    G.puzzle = {
+      i: i, active: true, tries: 0, daily: !!daily,
+      key: p.key, len: puzzleSeqLen(p), side: side,
+      seq: Array.isArray(p.seq) ? p.seq.slice() : null,
+      source: p.source || 'builtin',
+      startedAt: Date.now(), solved: false,
+      solutionShown: false, replaying: false, status: '', statusKind: ''
+    };
+    /* Not analysis mode: a puzzle is a puzzle, and analysisMode would turn the
+       secondary panels back on. */
     G.analysisMode = false;
+    G.hintIdx = null;
+    /* a fresh puzzle (including Reset) always starts with the solution hidden */
+    var solBox = $('puzHudSolution');
+    if (solBox) { solBox.hidden = true; solBox.innerHTML = ''; }
+    enterPuzzleChrome();
     refreshAll();
-    toast('Puzzle ' + (i + 1) + ': X to move — find the move that forces a win');
-    setEngineStatus('Puzzle mode — engine verifies every guess.');
+    renderPuzzleHud();
+    toast('Puzzle ' + (i + 1) + ': ' + sName(side) + ' to move — find the forced win');
+    setEngineStatus('Puzzle mode — analysis is hidden; the engine only checks your move.');
   }
+
+  function enterPuzzleChrome() {
+    document.body.classList.add('puzzle-mode');
+    $('puzHud').hidden = false;
+    /* Cancel anything the analysis engine had in flight and make sure no
+       stale result can be applied to the puzzle position. */
+    analysisToken++; explainToken++; threatToken++;
+    cancelAnalysis('puzzle-mode');
+    setSearching(false);
+    current = null;
+    threats = [];
+    showEngineInfo(null);
+    if (puzTimerHandle) clearInterval(puzTimerHandle);
+    puzTimerHandle = setInterval(function () {
+      if (!puzzleOpen()) { clearInterval(puzTimerHandle); puzTimerHandle = null; return; }
+      var el = $('puzHudTimer');
+      if (el && G.puzzle.active) el.textContent = fmtClock(Date.now() - G.puzzle.startedAt);
+    }, 500);
+  }
+
+  function exitPuzzleChrome() {
+    document.body.classList.remove('puzzle-mode');
+    var hud = $('puzHud'); if (hud) hud.hidden = true;
+    if (puzTimerHandle) { clearInterval(puzTimerHandle); puzTimerHandle = null; }
+  }
+
+  function exitPuzzle() {
+    if (!puzzleOpen()) return;
+    G.puzzle = null;
+    exitPuzzleChrome();
+    goRoute('puzzles');
+    refreshAll();
+    scheduleAnalysis();
+    setEngineStatus('Ready');
+  }
+
+  function resetPuzzle() {
+    if (!puzzleOpen()) return;
+    var i = G.puzzle.i, daily = G.puzzle.daily;
+    startPuzzle(i, daily);
+    toast('Puzzle reset');
+  }
+
+  function renderPuzzleHud() {
+    if (!puzzleOpen() || !$('puzHud')) return;
+    var p = G.puzzle, side = sName(p.side);
+    $('puzHudTitle').textContent = (p.daily ? 'Daily Challenge — ' : '') + 'Puzzle ' + (p.i + 1);
+    /* The LENGTH of the win is itself a hint, so it is withheld until the
+       puzzle is solved or the solution is explicitly requested. */
+    $('puzHudKind').textContent = (p.solutionShown || p.solved)
+      ? 'Forced win in ' + activeWinIn(p)
+      : 'Forced win';
+    $('puzHudObj').innerHTML = 'Find the forced win for <b class="' + side.toLowerCase() + '">' + side + '</b>.';
+    $('puzHudTries').textContent = String(p.tries);
+    $('puzHudTimer').textContent = fmtClock((p.solved ? p.solvedAt : Date.now()) - p.startedAt);
+    $('puzHudSource').textContent = p.source === 'generated-local' ? 'Generated on this device' : '';
+    var st = $('puzHudStatus');
+    st.textContent = p.status || '';
+    st.className = 'st' + (p.statusKind ? ' ' + p.statusKind : '');
+    $('puzShowSol').disabled = !!p.replaying;
+    $('puzReplaySol').hidden = !p.solutionShown;
+    $('puzReplaySol').disabled = !!p.replaying;
+  }
+
+  /* ---- user moves ------------------------------------------------------
+
+     Verifying the player's move needs care, because solveForcing(state, side)
+     always assumes `side` is the one to move. Handing it the position AFTER
+     the player has already moved and asking "can side force a win?" quietly
+     grants the player a second move in a row — under which essentially every
+     square looks winning, since the original threat is still standing. The
+     check below instead reasons about the position with the OPPONENT to move,
+     using only facts the engine can establish:
+
+       immediate five                -> win, no search needed
+       two or more five-threats      -> win: the opponent can block at most one
+       exactly one five-threat       -> the opponent's block is FORCED, so play
+                                        it and hand the solver a position where
+                                        `side` really is to move
+       no five-threat (a quiet move) -> not provable this way; accepted only if
+                                        it is the puzzle's own solver-verified
+                                        first move
+
+     The last branch is sound but not complete: a quiet winning move that is
+     not the stored one is rejected. That costs nothing for the puzzles this
+     build produces — every generated solution is an immediate five or a
+     threat-carrying move, so the intended answer always lands in one of the
+     first three branches — and it is the conservative direction to be wrong in.
+     ---------------------------------------------------------------------- */
+  function puzzleStateAfter(i, side) {
+    var s = new E.State(), k;
+    if (G.root) for (k = 0; k < LEN; k++) if (G.root[k]) s.play(k, G.root[k]);
+    movesUpTo(G.view).forEach(function (m) { s.play(m[0], m[1]); });
+    s.play(i, side);
+    return s;
+  }
+
   function puzzleGuess(i) {
+    var p = G.puzzle;
+    if (!p || !p.active || p.replaying) return;
     var b = boardAt(G.view);
     if (b[i]) return;
-    G.puzzle.tries++;
+    var side = p.side, opp = other(side);
+    p.tries++;
     STATS.puzzleTries++;
-    var moves = movesUpTo(G.view).concat([[i, X]]);
-    setEngineStatus('Verifying your move with the solver…');
-    var tok = ++analysisToken;
-    /* Verification is done by re-running the engine on the guess, not by
-       string-matching the stored key: any move that provably forces a win
-       counts, and a move that does not is rejected on engine evidence. */
-    var tb = Int8Array.from(b); tb[i] = X;
-    var immediate = !!E.winningLineAt(tb, i, X);
-    if (immediate) { puzzleSolved(i); return; }
-    ask({ type: 'forcing', moves: moves, root: rootPayload(), side: X, maxPly: 10, timeMs: 3000 })
-      .then(function (r) {
-        if (tok !== analysisToken) return;
-        if (r && r.win) puzzleSolved(i);
-        else {
-          SND.err();
-          setEngineStatus('Solver found no forced win after ' + nm(i) + ' — try again.');
-          toast('Not a forced win — try another square');
-          flash(i);
-        }
-      }).catch(function (e) { if (!isCancel(e)) setEngineStatus('Verification failed.'); });
+    p.status = 'Checking\u2026'; p.statusKind = '';
+    renderPuzzleHud();
+    setEngineStatus('Checking your move\u2026');
+
+    function wrong() {
+      if (!puzzleActive()) return;
+      SND.err();
+      /* 26: clear and restrained, and it does NOT give the answer away. */
+      p.status = nm(i) + ' does not force a win. Try another square.';
+      p.statusKind = 'bad';
+      renderPuzzleHud();
+      setEngineStatus('Puzzle mode \u2014 that move does not force a win.');
+      flash(i);
+    }
+
+    var s = puzzleStateAfter(i, side);
+
+    if (E.winningLineAt(s.board, i, side)) { puzzleSolved(i); return; }
+
+    var wins = E.winningCells(s, side);
+    if (wins.length >= 2) { puzzleSolved(i); return; }      // unstoppable double threat
+
+    if (wins.length === 1) {
+      var blk = wins[0];
+      s.play(blk, opp);
+      if (E.winningLineAt(s.board, blk, opp)) { wrong(); return; }   // the block wins for them
+      var tok = ++analysisToken;
+      var moves = movesUpTo(G.view).concat([[i, side], [blk, opp]]);
+      ask({ type: 'forcing', moves: moves, root: rootPayload(), side: side, maxPly: 8, timeMs: 3000 })
+        .then(function (r) {
+          if (tok !== analysisToken || !puzzleActive()) return;
+          if (r && r.win && !r.aborted) puzzleSolved(i); else wrong();
+        })
+        .catch(function (e) {
+          if (tok !== analysisToken || !puzzleActive()) return;
+          if (isCancel(e)) return;
+          p.status = 'Could not check that move \u2014 try again.';
+          p.statusKind = 'bad';
+          renderPuzzleHud();
+        });
+      return;
+    }
+
+    /* Quiet move: no immediate threat to hang a proof on. */
+    if (i === p.key) { puzzleSolved(i); return; }
+    wrong();
   }
+
   function puzzleSolved(i) {
     var p = G.puzzle;
     p.active = false;
+    p.solved = true;
+    p.solvedAt = Date.now();
     if (PUZ_STATE[p.i] !== 'solved') {
       PUZ_STATE[p.i] = 'solved'; store('puz3', PUZ_STATE);
       STATS.puzzlesSolved++; store('stats3', STATS);
     }
     SND.win();
-    place(i, X);
+    place(i, p.side);
+    p.status = 'Solved \u2014 ' + nm(i) + ' forces the win in ' + activeWinIn(p) + '. Solved in ' + p.tries +
+      ' attempt' + (p.tries === 1 ? '' : 's') + '.';
+    p.statusKind = 'good';
+    renderPuzzleHud();
     toast('Solved in ' + p.tries + ' attempt' + (p.tries === 1 ? '' : 's') + '!');
-    setEngineStatus('Puzzle solved — ' + nm(i) + ' forces the win.');
+    setEngineStatus('Puzzle solved.');
     checkAchievements(null);
     renderPuzzles();
   }
+
+  /* ---- show solution / replay ------------------------------------------
+     The solution stays hidden until it is explicitly asked for. It then works
+     whether or not the player solved the puzzle, and the animation shows the
+     verified sequence and nothing else — no evaluation, no alternatives. */
+  function puzzleSolutionSeq() {
+    var p = G.puzzle;
+    if (p.seq && p.seq.length) return p.seq.slice();
+    return [p.key];                        // old puzzle objects store only the first move
+  }
+
+  function showPuzzleSolution() {
+    if (!puzzleOpen()) return;
+    var p = G.puzzle;
+    /* Bundled puzzles store only the first move, so the rest of the line is
+       resolved from the solver on demand. Doing it here rather than at load
+       time keeps it off the boot path and out of the player's way until they
+       have actually asked to see the answer. */
+    if (!p.seq || !p.seq.length) {
+      p.status = 'Working out the line\u2026'; p.statusKind = '';
+      renderPuzzleHud();
+      var tok = ++analysisToken, pz = p;
+      ask({ type: 'forcing', moves: movesUpTo(G.view), root: rootPayload(),
+            side: p.side, maxPly: 10, timeMs: 3000 })
+        .then(function (r) {
+          if (tok !== analysisToken || G.puzzle !== pz) return;
+          if (r && r.win && r.seq && r.seq.length) pz.seq = r.seq.slice();
+          revealPuzzleSolution();
+        })
+        .catch(function (e) { if (!isCancel(e) && G.puzzle === pz) revealPuzzleSolution(); });
+      return;
+    }
+    revealPuzzleSolution();
+  }
+
+  function revealPuzzleSolution() {
+    if (!puzzleOpen()) return;
+    var p = G.puzzle;
+    p.solutionShown = true;
+    p.active = false;
+    var seq = puzzleSolutionSeq(), side = sName(p.side), opp = sName(other(p.side));
+    var box = $('puzHudSolution');
+    var text = '<b>Forced win in ' + activeWinIn(p) + ' for ' + side + '.</b> ';
+    if (seq.length === 1) {
+      text += side + ' plays <b>' + nm(seq[0]) + '</b>, completing five in a row.';
+    } else if (seq.length === 3) {
+      text += side + ' plays <b>' + nm(seq[0]) + '</b>, creating a threat ' + opp +
+        ' cannot cover. After ' + opp + ' ' + nm(seq[1]) + ', ' + side + ' finishes with <b>' +
+        nm(seq[2]) + '</b>.';
+    } else if (seq.length > 3) {
+      var line = [];
+      for (var k = 0; k < seq.length; k++) line.push((k % 2 === 0 ? side : opp) + ' ' + nm(seq[k]));
+      text += 'The forcing line is <b>' + line.join(' &middot; ') + '</b>; every reply in between is forced.';
+    } else {
+      text += side + ' starts with <b>' + nm(seq[0]) + '</b>; the threats that follow cannot all be answered.';
+    }
+    box.innerHTML = text;
+    box.hidden = false;
+    p.status = 'Solution shown.';
+    p.statusKind = '';
+    renderPuzzleHud();
+    setEngineStatus('Solution shown.');
+    replayPuzzleSolution();
+  }
+
+  function replayPuzzleSolution() {
+    if (!puzzleOpen()) return;
+    var p = G.puzzle;
+    if (p.replaying) return;
+    var seq = puzzleSolutionSeq();
+
+    /* Always replay from the puzzle position itself, discarding whatever the
+       player tried, so the animation shows the verified line and only that. */
+    var base = PUZZLES[p.i];
+    G.main.length = 0;
+    base.moves.forEach(function (idx, k) {
+      G.main.push({ idx: idx, player: sideAt(k), evalAfter: null, quality: null });
+    });
+    G.variation = null; G.redo.length = 0;
+    G.view = G.main.length;
+    G.status = 'playing'; G.winner = null; G.winCells = null;
+    invalidateBoard(); refreshAll();
+
+    p.replaying = true;
+    renderPuzzleHud();
+    var step = 0, side = p.side;
+    var delay = reduceMotion ? 0 : 620;
+
+    function playNext() {
+      if (!puzzleOpen() || G.puzzle !== p) return;               // puzzle left mid-replay
+      if (step >= seq.length) {
+        p.replaying = false;
+        highlightSolutionFirstMove(seq[0]);
+        renderPuzzleHud();
+        return;
+      }
+      var idx = seq[step];
+      var player = (step % 2 === 0) ? side : other(side);
+      if (!boardAt(G.view)[idx]) place(idx, player);
+      step++;
+      if (delay) setTimeout(playNext, delay); else playNext();
+    }
+    /* Reduced motion: lay the whole line down at once, no timed animation.
+       The information is identical — only the choreography is dropped. */
+    playNext();
+  }
+
+  function highlightSolutionFirstMove(idx) {
+    if (cellEls[idx]) {
+      cellEls[idx].classList.add('hint');
+      /* `hint` is normally an analysis class; here it marks the solution the
+         player explicitly asked to see, which is not leaked information. */
+    }
+  }
+
+  if ($('puzShowSol')) $('puzShowSol').onclick = function () { SND.click(); showPuzzleSolution(); };
+  if ($('puzReplaySol')) $('puzReplaySol').onclick = function () { SND.click(); replayPuzzleSolution(); };
+  if ($('puzResetBtn')) $('puzResetBtn').onclick = function () { SND.click(); resetPuzzle(); };
+  if ($('puzExitBtn')) $('puzExitBtn').onclick = function () { SND.click(); exitPuzzle(); };
+
+  /* =======================================================================
+     GENERATOR UI
+     ======================================================================= */
+  var reduceMotion = false;
+  try { reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
+
+  function fmtClock(ms) {
+    var s = Math.max(0, Math.floor((ms || 0) / 1000));
+    return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
+  }
+  function fmtNum(n) { return (n || 0).toLocaleString(); }
+
+  /* ---- live candidate mini-board ---------------------------------------
+     Draws the ACTUAL candidate the worker last reported. There is no
+     decorative placeholder here: with no candidate in hand the board is
+     drawn empty and dimmed rather than showing stones that mean nothing. */
+  var genShownSig = '';
+  function renderGenBoard(moves, solution) {
+    var g = $('genBoardG'); if (!g) return;
+    var wrap = $('genBoard');
+    var movesSig = moves ? moves.join(',') : '';
+    var sig = movesSig + '|' + (solution == null ? '' : solution);
+    if (sig === genShownSig) return;
+    var prevMoves = genShownSig.split('|')[0];
+    var prevLen = prevMoves ? prevMoves.split(',').length : 0;
+    /* only animate stones that are genuinely NEW on top of what is shown */
+    var isGrowth = !!moves && moves.length >= prevLen && prevMoves === moves.slice(0, prevLen).join(',');
+    genShownSig = sig;
+
+    var s = '', i;
+    for (i = 0; i < SIZE; i++) {
+      s += '<line class="gl" x1="' + (i + .5) + '" y1="0.5" x2="' + (i + .5) + '" y2="' + (SIZE - .5) + '"/>';
+      s += '<line class="gl" x1="0.5" y1="' + (i + .5) + '" x2="' + (SIZE - .5) + '" y2="' + (i + .5) + '"/>';
+    }
+    if (moves && moves.length) {
+      for (i = 0; i < moves.length; i++) {
+        var idx = moves[i], cx = (idx % SIZE) + .5, cy = ((idx / SIZE) | 0) + .5;
+        var fresh = (!reduceMotion && isGrowth && i >= prevLen) ? ' fresh' : '';
+        if (i % 2 === 0) {
+          s += '<g class="gx' + fresh + '"><line x1="' + (cx - .28) + '" y1="' + (cy - .28) + '" x2="' + (cx + .28) + '" y2="' + (cy + .28) + '"/>' +
+            '<line x1="' + (cx + .28) + '" y1="' + (cy - .28) + '" x2="' + (cx - .28) + '" y2="' + (cy + .28) + '"/></g>';
+        } else {
+          s += '<circle class="go' + fresh + '" cx="' + cx + '" cy="' + cy + '" r="0.3"/>';
+        }
+      }
+    }
+    if (solution != null) {
+      s += '<circle class="sol" cx="' + ((solution % SIZE) + .5) + '" cy="' + (((solution / SIZE) | 0) + .5) + '" r="0.42"/>';
+    }
+    g.innerHTML = s;
+    if (wrap) wrap.classList.toggle('idle', !(moves && moves.length));
+  }
+
+  var PHASE_CLASS = {
+    'Ready': '', 'Generating position': 'run', 'Verifying forced win': 'run',
+    'Accepted': 'acc', 'Rejected': 'rej', 'Stopped': '', 'Completed': 'acc'
+  };
+
+  function setStat(id, text) {
+    var el = $(id); if (!el) return;
+    if (el.textContent === text) return;
+    el.textContent = text;
+    if (reduceMotion) return;
+    el.classList.remove('tick');
+    void el.offsetWidth;                       // restart the animation
+    el.classList.add('tick');
+  }
+
+  function renderGenClock() {
+    if (!GS) return;
+    setStat('genElapsed', fmtClock(GS.elapsedMs));
+  }
+
+  var genSavedShown = -1;
+  function renderGenerator() {
+    if (!$('genOverlay')) return;
+    var running = !!(GS && GS.running);
+    $('genOverlay').classList.toggle('is-running', running);
+    var live = $('genLive');
+    if (live) live.querySelector('b').textContent = running ? 'Worker active' : (GS && GS.accepted ? 'Session complete' : 'Worker ready');
+
+    /* settings are locked while a session is in flight */
+    [].forEach.call($('genTimeSeg').querySelectorAll('button'), function (b) { b.disabled = running; });
+    [].forEach.call($('genTargetSeg').querySelectorAll('button'), function (b) { b.disabled = running; });
+    press('genTimeSeg', String(genSettings.durationMs));
+    press('genTargetSeg', String(genSettings.target));
+
+    var startBtn = $('genStartBtn'), stopBtn = $('genStopBtn');
+    startBtn.hidden = running;
+    stopBtn.hidden = !running;
+    startBtn.textContent = (GS && !GS.running) ? 'Resume' : 'Start';
+
+    var phase = GS ? GS.phase : 'Ready';
+    $('genPhaseText').textContent = phase;
+    $('genPhase').className = 'gen-phase ' +
+      ((GS && (GS.endReason === 'worker-error' || GS.endReason === 'error')) ? 'err' : (PHASE_CLASS[phase] || ''));
+    var steps = $('genSteps');
+    if (steps) {
+      var step = phase === 'Accepted' || phase === 'Completed' ? 3 : phase === 'Verifying forced win' || phase === 'Rejected' ? 2 : phase === 'Generating position' ? 1 : 0;
+      [].forEach.call(steps.children, function (el, i) {
+        el.classList.toggle('active', i === step - 1);
+        el.classList.toggle('done', i < step - 1);
+      });
+    }
+
+    setStat('genAttempts', fmtNum(GS ? GS.attempts : 0));
+    setStat('genAccepted', fmtNum(GS ? GS.accepted : 0));
+    setStat('genRejected', fmtNum(GS ? GS.rejected : 0));
+    setStat('genDuplicates', fmtNum(GS ? GS.duplicates : 0));
+    setStat('genElapsed', fmtClock(GS ? GS.elapsedMs : 0));
+    setStat('genNodes', fmtNum(GS ? GS.nodes : 0));
+    setStat('genDepth', String(GS ? GS.solverDepth : 0));
+    setStat('genSeqLen', (GS && GS.len != null) ? String(GS.len) : '—');
+
+    var reason = GS ? GS.reason : null;
+    if (!GS) reason = 'Choose a time and a target, then press Start.';
+    else if (!GS.running) {
+      var tail = {
+        target: 'Target reached.', timeout: 'Session time limit reached.',
+        stopped: 'Stopped.',
+        exhausted: 'No candidate passed verification for a long stretch — stopped.',
+        'worker-error': GS.reason || 'The generator stopped unexpectedly.',
+        error: GS.reason || 'The generator could not start.'
+      }[GS.endReason] || 'Stopped.';
+      reason = tail + ' ' + GS.accepted + ' puzzle' + (GS.accepted === 1 ? '' : 's') + ' from ' +
+        GS.attempts + ' attempt' + (GS.attempts === 1 ? '' : 's') + '.';
+    }
+    $('genReason').textContent = reason || '';
+
+    renderGenBoard(GS ? GS.candidateMoves : null,
+      (GS && GS.phase === 'Accepted' && GS.lastAccepted) ? GS.lastAccepted.key : null);
+
+    /* Persistence status. "Accepted" and "saved locally" are reported as the
+       separate facts they are: if the disk write failed, this says so. */
+    var saved = persistedCount(), box = $('genSaved'), txt = $('genSavedText');
+    var held = GENERATED_PUZZLES.length;
+    box.className = 'gen-saved' + (!persistOk ? ' warn' : (saved ? '' : ' none'));
+    if (!persistOk) {
+      txt.textContent = held + ' accepted, ' + saved + ' saved locally';
+      $('genNote').hidden = false;
+      $('genNote').textContent = (persistError || 'Local storage is unavailable.') +
+        ' Accepted puzzles stay in memory for this session and can still be played and exported, but they will not survive a reload.';
+    } else {
+      txt.textContent = saved ? '\u2713 ' + saved + ' puzzle' + (saved === 1 ? '' : 's') + ' saved locally'
+        : 'No puzzles saved yet';
+      $('genNote').hidden = true;
+    }
+    if (!reduceMotion && genSavedShown >= 0 && saved > genSavedShown) {
+      box.classList.remove('bump'); void box.offsetWidth; box.classList.add('bump');
+    }
+    genSavedShown = saved;
+
+    renderGenBankLine();
+  }
+
+  function renderGenBankLine() {
+    var el = $('genBankLine'); if (!el) return;
+    var n = GENERATED_PUZZLES.length, saved = persistedCount();
+    var xN = 0, oN = 0, l1 = 0, l3 = 0, i;
+    for (i = 0; i < n; i++) {
+      if (GENERATED_PUZZLES[i].sideToMove === 'O') oN++; else xN++;
+      if (GENERATED_PUZZLES[i].len === 1) l1++; else l3++;
+    }
+    el.textContent = !n ? 'No generated puzzles yet.'
+      : n + ' generated puzzle' + (n === 1 ? '' : 's') + ' in the local bank — ' +
+        xN + ' for X, ' + oN + ' for O · ' + l1 + ' forced win in 1, ' + l3 + ' forced win in 2' +
+        (saved === n ? '' : ' · only ' + saved + ' saved to disk');
+    var cl = $('genClearBtn'); if (cl) cl.disabled = !n;
+  }
+
+  /* ---- modal control ---------------------------------------------------- */
+  function openGenerator() {
+    if (!GS) { genShownSig = ''; genSavedShown = -1; }
+    renderGenerator();
+    openModal('genOverlay');
+  }
+  function closeGenerator(force) {
+    /* 29: never silently destroy a running generation. */
+    if (GS && GS.running && !force) {
+      confirmDialog('Stop generating and close? Every puzzle already saved stays in your bank.',
+        'Generation is running')
+        .then(function (yes) {
+          if (!yes) return;
+          stopGeneration('stopped');
+          closeModal('genOverlay');
+        });
+      return;
+    }
+    closeModal('genOverlay');
+  }
+
+  if ($('genOpenBtn')) $('genOpenBtn').onclick = function () { SND.click(); openGenerator(); };
+  if ($('genCloseBtn')) $('genCloseBtn').onclick = function () { closeGenerator(); };
+  if ($('genCloseX')) $('genCloseX').onclick = function () { closeGenerator(); };
+  if ($('genStartBtn')) $('genStartBtn').onclick = function () {
+    /* 19: Resume always starts a FRESH session against the existing bank. It
+       never reuses worker state from the previous one. */
+    GS = null;
+    startGeneration();
+  };
+  if ($('genStopBtn')) $('genStopBtn').onclick = function () { stopGeneration('stopped'); };
+  if ($('genTimeSeg')) $('genTimeSeg').onclick = function (e) {
+    var b = e.target.closest('button'); if (!b || b.disabled) return;
+    genSettings.durationMs = +b.dataset.v; store('genSettings3', genSettings); renderGenerator();
+  };
+  if ($('genTargetSeg')) $('genTargetSeg').onclick = function (e) {
+    var b = e.target.closest('button'); if (!b || b.disabled) return;
+    genSettings.target = +b.dataset.v; store('genSettings3', genSettings); renderGenerator();
+  };
+
+  /* =======================================================================
+     EXPORT
+     -----------------------------------------------------------------------
+     Exports the locally generated bank and nothing else: no worker internals,
+     no session bookkeeping, no bundled puzzles. Works with zero puzzles, works
+     mid-session, works after Stop — it reads the bank, which is always current
+     precisely because every accepted puzzle was written to it immediately.
+     ======================================================================= */
+  function exportGeneratedJSON() {
+    var out = GENERATED_PUZZLES.map(function (p) {
+      var o = {
+        moves: p.moves.slice(), key: p.key, len: p.len,
+        sideToMove: p.sideToMove, source: p.source,
+        generatedAt: p.generatedAt, elapsedMs: p.elapsedMs, nodes: p.nodes,
+        maxPly: p.maxPly, solverVersion: p.solverVersion
+      };
+      if (p.seq) o.seq = p.seq.slice();
+      return o;
+    });
+    return JSON.stringify(out, null, 2);
+  }
+  function doExport() {
+    var n = GENERATED_PUZZLES.length;
+    showIO('Generated puzzles',
+      n ? n + ' generated puzzle' + (n === 1 ? '' : 's') + '. Copy this JSON to keep or share them.'
+        : 'No puzzles have been generated yet — this is an empty but valid JSON array.',
+      exportGeneratedJSON(), 'Copy');
+  }
+  if ($('genExportBtn')) $('genExportBtn').onclick = function () { doExport(); };
+  if ($('genExportBtn2')) $('genExportBtn2').onclick = function () { closeModal('genOverlay'); doExport(); };
+  if ($('genClearBtn')) $('genClearBtn').onclick = function () {
+    if (!GENERATED_PUZZLES.length) return;
+    confirmDialog('Delete all ' + GENERATED_PUZZLES.length +
+      ' locally generated puzzles? Bundled puzzles are not affected.', 'Clear generated puzzles')
+      .then(function (yes) {
+        if (!yes) return;
+        GENERATED_PUZZLES.length = 0;
+        writeGeneratedBank();
+        rebuildMergedPuzzles();
+        renderPuzzles(); renderGenerator();
+        toast('Generated puzzles cleared');
+      });
+  };
 
   /* =======================================================================
      END-OF-GAME SUMMARY
@@ -1792,7 +2899,7 @@
      ======================================================================= */
   function openModal(id) { $(id).classList.add('open'); }
   function closeModal(id) { $(id).classList.remove('open'); }
-  function closeAll() { ['settingsOverlay', 'confirmOverlay', 'endOverlay', 'ioOverlay', 'editOverlay', 'cmpOverlay', 'aboutOverlay'].forEach(closeModal); }
+  function closeAll() { ['settingsOverlay', 'confirmOverlay', 'endOverlay', 'ioOverlay', 'editOverlay', 'cmpOverlay', 'aboutOverlay', 'genOverlay'].forEach(closeModal); }
   var confRes = null;
   function confirmDialog(text, title) {
     $('confText').textContent = text; $('confTitle').textContent = title || 'Confirm';
@@ -1955,6 +3062,11 @@
       if (b.dataset.route === r) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     });
     closeNav();
+    if (!(r === 'play' || r === 'local' || r === 'analysis') && G && G.puzzle) {
+      G.puzzle = null;
+      exitPuzzleChrome();
+      refreshAll();
+    }
     if (r === 'stats') refreshStatsPage();
     if (r === 'puzzles') renderPuzzles();
     if (r === 'home') updateHomeCard();
@@ -2120,6 +3232,33 @@
     gradeOf: function (i) { return line()[i] && line()[i].quality; },
     isSearching: function () { return searching; },
     PUZZLES: PUZZLES,
+    /* ---- puzzle bank ---- */
+    BUILTIN_PUZZLES: BUILTIN_PUZZLES, CONTRIBUTED_PUZZLES: CONTRIBUTED_PUZZLES,
+    get GENERATED_PUZZLES() { return GENERATED_PUZZLES; },
+    MERGED_PUZZLES: MERGED_PUZZLES,
+    canonKeyOf: canonKeyOf, puzzleSide: puzzleSide,
+    validateGeneratedPuzzle: validateGeneratedPuzzle,
+    saveGeneratedPuzzle: saveGeneratedPuzzle,
+    loadGeneratedBank: function () { GENERATED_PUZZLES = loadGeneratedBank(); rebuildMergedPuzzles(); return GENERATED_PUZZLES; },
+    rebuildMergedPuzzles: rebuildMergedPuzzles,
+    persistedCount: persistedCount,
+    persistOk: function () { return persistOk; },
+    exportGeneratedJSON: exportGeneratedJSON,
+    GEN_BANK_KEY: GEN_BANK_KEY,
+    /* ---- generator ---- */
+    get GS() { return GS; },
+    genSettings: genSettings,
+    genToken: function () { return GEN_TOKEN; },
+    genMode: function () { return PG.mode; },
+    startGeneration: startGeneration, stopGeneration: stopGeneration,
+    openGenerator: openGenerator, closeGenerator: closeGenerator,
+    onGenMessage: onGenMessage,
+    killGenWorker: killGenWorker,
+    GEN_TIME_OPTIONS: GEN_TIME_OPTIONS, GEN_TARGET_OPTIONS: GEN_TARGET_OPTIONS,
+    /* ---- puzzle play ---- */
+    startPuzzle: startPuzzle, exitPuzzle: exitPuzzle, resetPuzzle: resetPuzzle,
+    showPuzzleSolution: showPuzzleSolution, replayPuzzleSolution: replayPuzzleSolution,
+    puzzleGuess: function (i) { return puzzleGuess(i); },
     /* worker/search-cancellation hooks */
     ask: ask, askAI: askAI, cancelAllSearches: cancelAllSearches, cancelAnalysis: cancelAnalysis, cancelAI: cancelAI,
     workerGen: function () { return AW.gen; },
