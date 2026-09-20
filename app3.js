@@ -571,6 +571,7 @@
     else { fill.style.height = (oShare * 100).toFixed(1) + '%'; fill.style.width = ''; }
     $('evalBar').parentNode.classList.toggle('no-coords', !S.coords);
     $('evalBar').style.display = S.evalBar ? '' : 'none';
+    $('evalCard').hidden = !S.evalBar;
     var label = forced ? ('M' + res.mateIn + ' ' + sName(res.mateFor)) : (p > 0 ? '+' : '') + p.toFixed(1);
     $('barTick').textContent = S.evalBar ? label : '';
     $('evalBar').setAttribute('aria-label', 'Evaluation ' + label + ' (positive favours X)');
@@ -925,8 +926,8 @@
 
   var graphPts = [];
   function refreshGraph() {
-    $('graphCard').hidden = !S.graph;
-    if (!S.graph || !G) return;
+    $('graphCard').hidden = !S.evalBar || !S.graph;
+    if (!S.evalBar || !S.graph || !G) return;
     var g = $('graph'), W = 320, H = 96, pad = 6;
     graphPts = [];
     var rootV = G.rootEval != null ? G.rootEval : (!G.root ? 0 : null);
@@ -1880,7 +1881,7 @@
     $(id).onclick = function () { S[key] = !S[key]; SND.click(); applySettings(); if (extra) extra(); };
   }
   bindSw('swSound', 'sound'); bindSw('swAuto', 'auto', function () { if (S.auto) scheduleAnalysis(); });
-  bindSw('swEval', 'evalBar', function () { setEvalDisplay(current); });
+  bindSw('swEval', 'evalBar', function () { setEvalDisplay(current); refreshGraph(); });
   bindSw('swBest', 'bestMove', function () { renderPosition(); });
   bindSw('swCand', 'candidates', function () { showEngineInfo(current); });
   bindSw('swThreat', 'threatMap', function () { refreshThreats(); renderPosition(); });

@@ -1,0 +1,11 @@
+const fs=require('fs');
+let shell=fs.readFileSync('shell2.html','utf8');
+const engine=fs.readFileSync('engine2.js','utf8');
+const app=fs.readFileSync('app2.js','utf8');
+const puz=fs.readFileSync('puzzles.json','utf8');
+shell=shell.replace('/* ENGINE_PLACEHOLDER */', engine);
+shell=shell.replace('<script>\n/* APP_PLACEHOLDER */\n</script>', '<script>\n'+app+'\n</script>');
+shell=shell.replace('<script id="puzzleSrc" type="application/json">[]</script>', '<script id="puzzleSrc" type="application/json">'+puz+'</script>');
+if(shell.includes('PLACEHOLDER')) throw new Error('placeholder left');
+fs.writeFileSync('xo5-analysis.html', shell);
+console.log('built bytes:', shell.length);
