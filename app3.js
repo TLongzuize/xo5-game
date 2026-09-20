@@ -45,7 +45,7 @@
   /* ---------------- settings ---------------- */
   var DEFAULTS = {
     level: 5, side: 'x', timeMs: 5000, clock: 0, sound: true,
-    auto: true, evalBar: true, bestMove: true, candidates: true,
+    analysisEngine: true, auto: true, evalBar: true, bestMove: true, candidates: true,
     threatMap: false, heatmap: false, quality: true, explain: true, cache: true,
     theme: 'light', coords: true, graph: true, details: false, boardSize: 620
   };
@@ -1830,10 +1830,12 @@
     press('themeSeg', S.theme);
     $('levelHint').textContent = 'Level ' + S.level + ' — ' + E.LEVELS9[S.level].label +
       ' (depth ≤ ' + E.LEVELS9[S.level].maxDepth + ', ' + (E.LEVELS9[S.level].vct ? 'VCF+VCT' : E.LEVELS9[S.level].vcf ? 'VCF' : 'no solver') + ')';
-    sw('swSound', S.sound); sw('swAuto', S.auto); sw('swEval', S.evalBar); sw('swBest', S.bestMove);
-    sw('swCand', S.candidates); sw('swThreat', S.threatMap); sw('swHeat', S.heatmap);
-    sw('swQuality', S.quality); sw('swExplain', S.explain); sw('swCache', S.cache);
-    sw('swCoords', S.coords); sw('swGraph', S.graph); sw('swDetails', S.details);
+    sw('swSound', S.sound);
+    sw('swAnalysisEngine', S.analysisEngine);
+    sw('swAuto', S.auto, !S.analysisEngine); sw('swEval', S.evalBar, !S.analysisEngine); sw('swBest', S.bestMove, !S.analysisEngine);
+    sw('swCand', S.candidates, !S.analysisEngine); sw('swThreat', S.threatMap, !S.analysisEngine); sw('swHeat', S.heatmap, !S.analysisEngine);
+    sw('swQuality', S.quality, !S.analysisEngine); sw('swExplain', S.explain, !S.analysisEngine); sw('swCache', S.cache, !S.analysisEngine);
+    sw('swCoords', S.coords); sw('swGraph', S.graph, !S.analysisEngine); sw('swDetails', S.details, !S.analysisEngine);
     $('sizeRange').value = S.boardSize;
     store('settings3', S);
     if (G) {
@@ -1846,7 +1848,11 @@
     var el = $(id); if (!el) return;
     [].forEach.call(el.querySelectorAll('button'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.v === v)); });
   }
-  function sw(id, on) { var el = $(id); if (el) el.setAttribute('aria-checked', String(!!on)); }
+  function sw(id, on, disabled) {
+    var el = $(id); if (!el) return;
+    el.setAttribute('aria-checked', String(!!on));
+    el.disabled = !!disabled;
+  }
 
   $('settingsBtn').onclick = function () { SND.click(); openModal('settingsOverlay'); };
   $('themeBtn').onclick = function () { S.theme = S.theme === 'light' ? 'dark' : 'light'; applySettings(); };
@@ -1880,6 +1886,22 @@
   function bindSw(id, key, extra) {
     $(id).onclick = function () { S[key] = !S[key]; SND.click(); applySettings(); if (extra) extra(); };
   }
+  var analysisKeys = ['auto', 'evalBar', 'bestMove', 'candidates', 'threatMap', 'heatmap', 'quality', 'explain', 'cache', 'graph', 'details'];
+  var analysisBackup = null;
+  $('swAnalysisEngine').onclick = function () {
+    S.analysisEngine = !S.analysisEngine;
+    if (!S.analysisEngine) {
+      analysisBackup = {};
+      analysisKeys.forEach(function (key) { analysisBackup[key] = S[key]; S[key] = false; });
+      cancelAllSearches('analysis-engine-off');
+    } else {
+      analysisKeys.forEach(function (key) { S[key] = analysisBackup ? analysisBackup[key] : true; });
+      analysisBackup = null;
+    }
+    SND.click(); applySettings();
+    setEvalDisplay(current); refreshGraph(); renderPosition(); refreshExplain();
+    if (S.analysisEngine && S.auto) scheduleAnalysis();
+  };
   bindSw('swSound', 'sound'); bindSw('swAuto', 'auto', function () { if (S.auto) scheduleAnalysis(); });
   bindSw('swEval', 'evalBar', function () { setEvalDisplay(current); refreshGraph(); });
   bindSw('swBest', 'bestMove', function () { renderPosition(); });
@@ -1903,6 +1925,7 @@
   $('resetSettingsBtn').onclick = async function () {
     if (!(await confirmDialog('Reset settings, statistics and achievements?', 'Reset everything'))) return;
     S = Object.assign({}, DEFAULTS);
+    analysisBackup = null;
     drop('settings3'); drop('stats3'); drop('ach3'); drop('puz3'); drop('save3');
     STATS = { played: 0, wins: 0, losses: 0, draws: 0, streak: 0, best: 0, moveTotal: 0, firstMoves: 0, centerFirst: 0, firstDistTotal: 0, byLevel: {}, puzzlesSolved: 0, puzzleTries: 0, analyses: 0, deepAnalyses: 0 };
     ACH = {}; PUZ_STATE = {};

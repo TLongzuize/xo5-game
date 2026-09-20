@@ -1328,11 +1328,10 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
         <p class="eval-desc" id="evalDesc">Equal position</p>
         <div class="progressbar" id="searchProg" hidden><i id="searchProgFill"></i></div>
         <p class="engine-status" id="engineStatus">Idle</p>
-        <div id="tacticalAlert"></div>
         <dl class="kv" id="engineKv"></dl>
         <details class="adv" id="pvBox"><summary>Principal variation</summary><div class="pv" id="pvList"></div></details>
         <details class="adv" id="candBox" open><summary>Candidate moves</summary><div id="candList"></div></details>
-        <details class="adv" id="explainBox"><summary>Move explanation</summary><p class="explain" id="explainText">—</p></details>
+        <details class="adv" id="explainBox"><summary>Move explanation</summary><div id="tacticalAlert"></div><p class="explain" id="explainText">—</p></details>
       </section>
 
       <section class="card card-pad">
@@ -1453,6 +1452,7 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
             <button data-v="30000">30s</button><button data-v="60000">60s</button>
             <button data-v="0">∞</button>
           </div></div>
+        <div class="set-row"><div><div class="label">Analysis Engine</div><div class="hint">Show and run engine analysis features</div></div><button class="switch" id="swAnalysisEngine" role="switch" aria-label="Analysis Engine"></button></div>
         <div class="set-row"><div><div class="label">Auto analysis</div><div class="hint">Analyse every position as it appears</div></div><button class="switch" id="swAuto" role="switch"></button></div>
         <div class="set-row"><div><div class="label">Evaluation</div></div><button class="switch" id="swEval" role="switch" aria-label="Evaluation"></button></div>
         <div class="set-row"><div><div class="label">Best-move arrow</div></div><button class="switch" id="swBest" role="switch"></button></div>
