@@ -1103,7 +1103,7 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
         <div class="hero-copy">
           <p class="hero-kicker"><i aria-hidden="true"></i>Runs in your browser. No account, no install.</p>
           <h2>Build five in a row before the engine does.</h2>
-          <p class="hero-lede">A 15&#215;15 strategy game with a real alpha-beta search engine behind it: nine levels to play against, a live read on who is winning, an analysis board, and solver-verified puzzles you can play or generate locally.</p>
+          <p class="hero-lede">A 15&#215;15 strategy game with nine AI levels to play against, a live read on who is winning, a separate analysis board, and solver-verified puzzles you can play or generate locally.</p>
           <div class="hero-cta">
             <button class="btn big onink" data-go="play">Play the engine</button>
             <button class="btn big outline-ink" data-go="analysis">Open the analysis board</button>
@@ -1188,8 +1188,8 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
       <section class="show" data-reveal>
         <div class="show-copy">
           <p class="sec-eyebrow">The engine</p>
-          <h4>Nine levels, and every one of them plays fair</h4>
-          <p>Level 1 looks a move or two ahead and is beatable on a bad day. Level 9 runs a deep alpha-beta search with iterative deepening and a tactical solver on top.</p>
+          <h4>Nine AI opponents, one real engine</h4>
+          <p>Choose an AI level from Beginner to Maximum when you play. Analysis is a separate board for inspecting positions after the game or exploring your own variations.</p>
           <ul class="show-list">
             <li><b>No level throws the game.</b> Every level from 1 to 9 takes an immediate win when one is on the board, and blocks one when it is not.</li>
             <li><b>Two workers, no freezing.</b> The move search and the position analysis run on separate background threads, so the page stays responsive while the engine thinks.</li>
@@ -1199,7 +1199,7 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
         <div class="show-visual">
           <div class="mock">
             <div class="mock-head">
-              <div><p class="mock-title">Level select</p><p class="mock-sub">Set once in Settings, used for every new game</p></div>
+              <div><p class="mock-title">AI level select</p><p class="mock-sub">Choose your opponent before a game</p></div>
               <div class="mock-dots" aria-hidden="true"><i></i><i></i><i></i></div>
             </div>
             <div class="lv-ladder" aria-hidden="true">
@@ -1772,7 +1772,7 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
       <div class="about-section">
         <h3>What the engine gives you</h3>
         <div class="about-feat-grid">
-          <div class="about-feat"><p class="af-title">Nine levels</p><p>Level 1 looks a move or two ahead. Level 9 searches deeply with full tactical awareness. No level will miss a win that is already on the board.</p></div>
+          <div class="about-feat"><p class="af-title">Nine AI levels</p><p>Choose the opponent strength for a game. Analysis remains a separate tool for studying positions, not another AI level.</p></div>
           <div class="about-feat"><p class="af-title">Evaluation bar</p><p>A live bar beside the board showing who stands better, updated as each search depth completes.</p></div>
           <div class="about-feat"><p class="af-title">Best-move arrow</p><p>The engine&rsquo;s preferred move, drawn straight onto the board.</p></div>
           <div class="about-feat"><p class="af-title">Principal variation</p><p>The sequence the engine expects to follow from here.</p></div>

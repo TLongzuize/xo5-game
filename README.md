@@ -10,10 +10,10 @@
 
 ## 🌟 Features
 
-- 🧠 **9-Level Search Engine:**
-  - Alpha-Beta pruning with iterative deepening.
+- 🤖 **9 AI Levels to Play Against:**
+  - Alpha-Beta pruning with iterative deepening, from Beginner to Maximum.
   - Transposition table caching with Zobrist hashing.
-  - Dedicated VCF (Victory of Continuous Four) and VCT (Victory of Continuous Threat) solvers for discovering forced wins.
+  - Dedicated VCF (Victory of Continuous Four) and VCT (Victory of Continuous Threat) solvers for discovering forced wins during play.
 - 📊 **Deep Position Analysis:**
   - Live evaluation bar and candidate move suggestions.
   - Interactive evaluation graph plotting win probability across the match.
