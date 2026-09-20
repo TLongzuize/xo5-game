@@ -844,7 +844,7 @@ html[data-theme="dark"] .q.mistake,html[data-theme="dark"] .q.blunder{color:#FDA
   border-radius:var(--r2);padding:6px;box-shadow:var(--sh1),0 0 0 7px color-mix(in srgb,var(--card) 72%,transparent);justify-self:center;flex:none}
 @media (max-width:620px){.gen-board{width:min(212px,62vw);height:min(212px,62vw)}}
 .gen-board svg{display:block;width:100%;height:100%}
-.gen-board .gl{stroke:var(--board-line);stroke-width:.045}
+.gen-board .gl{stroke:var(--board-line);stroke-width:.035}
 .gen-board .gx{stroke:var(--x);stroke-width:.17;stroke-linecap:round}
 .gen-board .go{stroke:var(--o);stroke-width:.17;fill:none}
 .gen-board .sol{fill:none;stroke:var(--ok);stroke-width:.09;stroke-dasharray:.18 .13}
@@ -5744,9 +5744,11 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
     genShownSig = sig;
 
     var s = '', i;
-    for (i = 0; i < SIZE; i++) {
-      s += '<line class="gl" x1="' + (i + .5) + '" y1="0.5" x2="' + (i + .5) + '" y2="' + (SIZE - .5) + '"/>';
-      s += '<line class="gl" x1="0.5" y1="' + (i + .5) + '" x2="' + (SIZE - .5) + '" y2="' + (i + .5) + '"/>';
+    /* XO preview: lines are cell boundaries, pieces sit at cell centres.
+       This deliberately differs from Gomoku's intersection-based board. */
+    for (i = 0; i <= SIZE; i++) {
+      s += '<line class="gl" x1="' + i + '" y1="0" x2="' + i + '" y2="' + SIZE + '"/>';
+      s += '<line class="gl" x1="0" y1="' + i + '" x2="' + SIZE + '" y2="' + i + '"/>';
     }
     if (moves && moves.length) {
       for (i = 0; i < moves.length; i++) {

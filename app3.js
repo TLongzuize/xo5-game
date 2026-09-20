@@ -2610,9 +2610,11 @@
     genShownSig = sig;
 
     var s = '', i;
-    for (i = 0; i < SIZE; i++) {
-      s += '<line class="gl" x1="' + (i + .5) + '" y1="0.5" x2="' + (i + .5) + '" y2="' + (SIZE - .5) + '"/>';
-      s += '<line class="gl" x1="0.5" y1="' + (i + .5) + '" x2="' + (SIZE - .5) + '" y2="' + (i + .5) + '"/>';
+    /* XO preview: lines are cell boundaries, pieces sit at cell centres.
+       This deliberately differs from Gomoku's intersection-based board. */
+    for (i = 0; i <= SIZE; i++) {
+      s += '<line class="gl" x1="' + i + '" y1="0" x2="' + i + '" y2="' + SIZE + '"/>';
+      s += '<line class="gl" x1="0" y1="' + i + '" x2="' + SIZE + '" y2="' + i + '"/>';
     }
     if (moves && moves.length) {
       for (i = 0; i < moves.length; i++) {
