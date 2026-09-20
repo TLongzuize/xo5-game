@@ -11,6 +11,11 @@ animated activity rail, a `Build → Prove → Save` phase timeline, a halo arou
 the live candidate board, and reduced-motion-safe animation. The source of
 truth remains `shell3.html`; rebuild `index.html` with `node build3.js`.
 
+**Latest board correction:** The generator preview is an XO board, not a
+Gomoku intersection board. Its 15 × 15 grid uses cell boundaries and every X/O
+is rendered at the centre of a square. This is implemented in `renderGenBoard`
+and is covered by the existing generator/UI regression tests.
+
 ---
 
 ## 0. THE THIRTY-SECOND VERSION
