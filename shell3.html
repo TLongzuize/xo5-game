@@ -513,14 +513,17 @@ header.top.stuck{border-bottom-color:var(--line)}
   border-color:var(--line-strong);box-shadow:var(--sh2);transform:translateY(-2px)
 }
 .forge-card-current{
-  border-color:var(--brass);background:color-mix(in srgb,var(--brass-soft) 8%,var(--card));
-  box-shadow:0 0 0 1px var(--brass-soft)
+  border-color:var(--brass);background:color-mix(in srgb,var(--brass-soft) 12%,var(--card));
+  box-shadow:0 0 0 1px var(--brass-soft),0 4px 20px color-mix(in srgb,var(--brass) 12%,transparent)
+}
+.forge-card-prev{
+  opacity:.88
 }
 .forge-card-coming{
-  opacity:.75
+  opacity:.68
 }
 .forge-card-coming:hover{
-  opacity:1
+  opacity:.85
 }
 .forge-card-inner{
   display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center
@@ -542,6 +545,15 @@ header.top.stuck{border-bottom-color:var(--line)}
 }
 .forge-desc{
   font-size:13px;color:var(--text-2);margin:0;line-height:1.5;flex:1
+}
+.forge-features-list{
+  list-style:none;margin:0;padding:0;text-align:left;display:flex;flex-direction:column;gap:3px
+}
+.forge-features-list li{
+  font-size:11.5px;color:var(--text-2);padding-left:14px;position:relative
+}
+.forge-features-list li::before{
+  content:'✓';position:absolute;left:0;color:var(--brass);font-weight:700
 }
 .forge-status{
   display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;
@@ -570,6 +582,49 @@ header.top.stuck{border-bottom-color:var(--line)}
 }
 .forge-status-coming .forge-status-dot{
   background:var(--text-3)
+}
+/* --- engine-features in settings cards --- */
+.engine-features{
+  list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:2px
+}
+.engine-features li{
+  font-size:11px;color:var(--text-2);padding-left:14px;position:relative
+}
+.engine-features li::before{content:'✓';position:absolute;left:0;color:var(--ok);font-weight:700}
+/* --- game-setup engine selector --- */
+.setup-engine-label{font-size:12px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.setup-engine-wrap{display:flex;flex-direction:column;gap:6px;margin-top:var(--s3)}
+.setup-engine-card{
+  display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  background:var(--card);border:1.5px solid var(--line);border-radius:var(--r2);
+  padding:10px 12px;cursor:pointer;transition:border-color .16s,background .16s;
+  font:inherit;color:inherit
+}
+.setup-engine-card:hover:not(:disabled){
+  border-color:var(--line-strong);background:var(--card-2)
+}
+.setup-engine-card-selected{
+  border-color:var(--brass)!important;
+  background:color-mix(in srgb,var(--brass-soft) 10%,var(--card))!important
+}
+.setup-engine-card-disabled{
+  opacity:.5;cursor:not-allowed
+}
+.sec-logo{width:36px;height:36px;flex:none;border-radius:6px;overflow:hidden;background:#FAF8F5;border:1px solid rgba(0,0,0,.06)}
+.sec-logo-img{width:100%;height:100%;object-fit:contain;display:block}
+.sec-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.sec-name{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sec-gen{font-size:11px;font-weight:600;color:var(--brass)}
+.sec-desc{font-size:11.5px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sec-desc-soon{color:var(--text-3)}
+.sec-check{font-size:16px;font-weight:700;color:var(--brass);flex:none}
+.setup-engine-desc{
+  font-size:12.5px;color:var(--text-2);line-height:1.5;padding:8px 10px;
+  background:var(--card-2);border-radius:var(--r2);border:1px solid var(--line)
+}
+.engine-setup-panel{
+  margin-top:var(--s3);padding:14px 16px;background:var(--card-2);
+  border:1px solid var(--line);border-radius:var(--r3)
 }
 @media (max-width:1024px){
   .forge-grid{grid-template-columns:repeat(2,1fr)}
@@ -1269,45 +1324,63 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
     <!-- ========================= ENGINE SHOWCASE ========================= -->
     <section class="home-sec" aria-labelledby="forgeHead">
       <div class="sec-head">
-        <p class="sec-eyebrow">ENGINE</p>
+        <p class="sec-eyebrow">ENGINE FAMILY</p>
         <h3 id="forgeHead">XO5 Forge</h3>
         <p>The tactical engine family powering XO5.</p>
       </div>
       <div class="forge-grid">
+        <!-- V3 PRO — Current Generation (first / most prominent) -->
         <div class="forge-card forge-card-current">
-          <div class="forge-card-inner">
-            <div class="forge-logo">
-              <img src="assets/forge-v3.png" alt="XO5 Forge V3 logo" class="forge-logo-img" onerror="this.style.display='none'">
-            </div>
-            <div class="forge-content">
-              <h4 class="forge-name">XO5 Forge V3</h4>
-              <p class="forge-desc">Current production engine powering XO5 today.</p>
-              <div class="forge-status forge-status-current">
-                <span class="forge-status-dot"></span>
-                <span class="forge-status-text">CURRENT ENGINE</span>
-              </div>
-              <div class="forge-status forge-status-available">
-                <span class="forge-status-dot"></span>
-                <span class="forge-status-text">Available</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="forge-card forge-card-coming">
           <div class="forge-card-inner">
             <div class="forge-logo">
               <img src="assets/forge-v3-pro.png" alt="XO5 Forge V3 PRO logo" class="forge-logo-img" onerror="this.style.display='none'">
             </div>
             <div class="forge-content">
               <h4 class="forge-name">XO5 Forge V3 PRO</h4>
-              <p class="forge-desc">A future enhanced variant of the Forge V3 generation.</p>
-              <div class="forge-status forge-status-coming">
+              <p class="forge-desc">The current engine powering XO5. Built on the V3 architecture and upgraded with stronger search, tactical analysis, and verification.</p>
+              <ul class="forge-features-list">
+                <li>Advanced PVS Search</li>
+                <li>Aspiration Windows</li>
+                <li>Improved Transposition Table</li>
+                <li>History &amp; Counter-Move Heuristics</li>
+                <li>Advanced Threat Analysis</li>
+                <li>Stronger VCF/VCT &amp; Tactical Verification</li>
+              </ul>
+              <div class="forge-status forge-status-current">
                 <span class="forge-status-dot"></span>
-                <span class="forge-status-text">Coming Soon</span>
+                <span>Current Generation</span>
+              </div>
+              <div class="forge-status forge-status-available">
+                <span class="forge-status-dot"></span>
+                <span>Available</span>
               </div>
             </div>
           </div>
         </div>
+        <!-- V3 — Previous Generation -->
+        <div class="forge-card forge-card-prev">
+          <div class="forge-card-inner">
+            <div class="forge-logo">
+              <img src="assets/forge-v3.png" alt="XO5 Forge V3 logo" class="forge-logo-img" onerror="this.style.display='none'">
+            </div>
+            <div class="forge-content">
+              <h4 class="forge-name">XO5 Forge V3</h4>
+              <p class="forge-desc">Stable previous-generation engine. Reliable alpha-beta search with iterative deepening, VCF/VCT tactical solver, and full analysis support.</p>
+              <ul class="forge-features-list">
+                <li>Alpha-Beta Search</li>
+                <li>Iterative Deepening</li>
+                <li>Transposition Table</li>
+                <li>VCF/VCT Solver</li>
+                <li>Threat Analysis</li>
+              </ul>
+              <div class="forge-status forge-status-available">
+                <span class="forge-status-dot"></span>
+                <span>Previous Generation &middot; Available</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- V4 — Coming Soon -->
         <div class="forge-card forge-card-coming">
           <div class="forge-card-inner">
             <div class="forge-logo">
@@ -1318,11 +1391,12 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
               <p class="forge-desc">Next-generation Forge engine. Coming soon.</p>
               <div class="forge-status forge-status-coming">
                 <span class="forge-status-dot"></span>
-                <span class="forge-status-text">Coming Soon</span>
+                <span>Coming Soon</span>
               </div>
             </div>
           </div>
         </div>
+        <!-- V4 PRO — Coming Soon -->
         <div class="forge-card forge-card-coming">
           <div class="forge-card-inner">
             <div class="forge-logo">
@@ -1333,7 +1407,7 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
               <p class="forge-desc">Future flagship Forge variant. Coming soon.</p>
               <div class="forge-status forge-status-coming">
                 <span class="forge-status-dot"></span>
-                <span class="forge-status-text">Coming Soon</span>
+                <span>Coming Soon</span>
               </div>
             </div>
           </div>
@@ -1653,6 +1727,12 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
           <button class="btn" id="analysisBtn" aria-pressed="false">Analysis Mode</button>
           <button class="btn" id="deepBtn">Deep Analyze</button>
           <button class="btn danger" id="stopBtn" hidden>■ Stop</button>
+        </div>
+        <!-- Engine selector for next game (shown in game view) -->
+        <div class="engine-setup-panel" id="engineSetupPanel">
+          <div class="setup-engine-label">Engine for next game</div>
+          <div class="setup-engine-wrap" id="setupEngineSelect"><!-- populated by JS --></div>
+          <div class="setup-engine-desc" id="setupEngineDesc"></div>
         </div>
         <div class="controls sub">
           <button class="btn sm" id="editBtn">Edit Position</button>

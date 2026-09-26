@@ -21,6 +21,7 @@
   'use strict';
 
   var E = window.XOEngine;
+  var EPro = window.XOEnginePro;
   var SIZE = E.SIZE, LEN = E.LEN, X = E.X, O = E.O;
   var COLS = 'ABCDEFGHIJKLMNO';
   var $ = function (id) { return document.getElementById(id); };
@@ -53,29 +54,17 @@
 
   /* ---------------- engine registry ---------------- */
   var ENGINE_REGISTRY = {
-    forge_v3: {
-      id: 'forge_v3',
-      name: 'XO5 Forge V3',
-      version: 'V3',
-      status: 'available',
-      description: 'Current stable XO5 Forge engine.',
-      logo: 'assets/forge-v3.png',
-      capabilities: {
-        analysis: true,
-        candidates: true,
-        pv: true,
-        forcingSolver: true,
-        puzzles: true,
-        realtimeEval: true
-      }
-    },
     forge_v3_pro: {
       id: 'forge_v3_pro',
       name: 'XO5 Forge V3 PRO',
       version: 'V3 PRO',
-      status: 'coming-soon',
-      description: 'Enhanced/professional variant of XO5 Forge V3.',
+      generation: 'Current Generation',
+      status: 'available',
+      description: 'Advanced PVS search · Improved TT · Enhanced threat analysis · Stronger VCF/VCT',
+      descLong: 'The current engine powering XO5. Built on the V3 architecture and upgraded with stronger search, tactical analysis, and verification.',
       logo: 'assets/forge-v3-pro.png',
+      engineObj: 'XOEnginePro',
+      workerObj: 'XOEnginePro',
       capabilities: {
         analysis: true,
         candidates: true,
@@ -83,15 +72,62 @@
         forcingSolver: true,
         puzzles: true,
         realtimeEval: true
-      }
+      },
+      features: [
+        'Advanced PVS Search',
+        'Aspiration Windows',
+        'Improved Transposition Table',
+        'History Heuristic',
+        'Counter-Move Heuristic',
+        'Enhanced Move Ordering',
+        'Advanced Threat Analysis',
+        'Stronger VCF/VCT',
+        'Tactical Verification',
+        'Improved Evaluation',
+        'Deterministic Benchmarking',
+        'Browser-first Performance'
+      ]
+    },
+    forge_v3: {
+      id: 'forge_v3',
+      name: 'XO5 Forge V3',
+      version: 'V3',
+      generation: 'Previous Generation',
+      status: 'available',
+      description: 'Incremental evaluation · Alpha-beta search · Tactical search · VCF/VCT',
+      descLong: 'Stable previous-generation engine. Reliable alpha-beta search with iterative deepening.',
+      logo: 'assets/forge-v3.png',
+      engineObj: 'XOEngine',
+      workerObj: 'XOEngine',
+      capabilities: {
+        analysis: true,
+        candidates: true,
+        pv: true,
+        forcingSolver: true,
+        puzzles: true,
+        realtimeEval: true
+      },
+      features: [
+        'Incremental Evaluation',
+        'Alpha-Beta Search',
+        'Transposition Table',
+        'Tactical Search',
+        'VCF/VCT',
+        'Threat Analysis',
+        'Iterative Deepening',
+        'Worker Support'
+      ]
     },
     forge_v4: {
       id: 'forge_v4',
       name: 'XO5 Forge V4',
       version: 'V4',
+      generation: 'Coming Soon',
       status: 'coming-soon',
       description: 'Next generation XO5 Forge engine.',
       logo: 'assets/forge-v4.png',
+      engineObj: null,
+      workerObj: null,
       capabilities: {
         analysis: true,
         candidates: true,
@@ -105,9 +141,12 @@
       id: 'forge_v4_pro',
       name: 'XO5 Forge V4 PRO',
       version: 'V4 PRO',
+      generation: 'Coming Soon',
       status: 'coming-soon',
       description: 'Next generation professional XO5 Forge engine.',
       logo: 'assets/forge-v4-pro.png',
+      engineObj: null,
+      workerObj: null,
       capabilities: {
         analysis: true,
         candidates: true,
@@ -119,9 +158,14 @@
     }
   };
 
-  var ENGINE_DEFAULT = 'forge_v3';
+  var ENGINE_DEFAULT = 'forge_v3_pro';
   var ENGINE_STORAGE_KEY = 'xo5.selectedEngine3';
   var currentEngineId = load(ENGINE_STORAGE_KEY, ENGINE_DEFAULT);
+  /* currentGameEngineId: the engine that the RUNNING game actually uses.
+     Set at game-start; never changes silently during a running game. */
+  var currentGameEngineId = currentEngineId;
+  /* Pending game-setup engine selection (from New Game screen). */
+  var pendingGameEngineId = null;
 
   function getEngine(id) {
     return ENGINE_REGISTRY[id] || null;
@@ -129,6 +173,27 @@
 
   function getCurrentEngine() {
     return getEngine(currentEngineId);
+  }
+
+  /* The engine object for the RUNNING game (E or EPro). */
+  function getGameEngineObj() {
+    var eng = getEngine(currentGameEngineId);
+    if (!eng) return E;
+    if (eng.engineObj === 'XOEnginePro' && EPro) return EPro;
+    return E;
+  }
+
+  /* The engine used for analysis (follows default, not game engine). */
+  function getAnalysisEngineObj() {
+    var eng = getCurrentEngine();
+    if (!eng) return E;
+    if (eng.engineObj === 'XOEnginePro' && EPro) return EPro;
+    return E;
+  }
+
+  function getGameEngineName() {
+    var eng = getEngine(currentGameEngineId);
+    return eng ? eng.name : 'XO5 Forge V3';
   }
 
   function getAvailableEngines() {
@@ -239,10 +304,15 @@
        may carry a non-empty root board or a non-X side to move. */
     var root = opts.root || null;
     var rootSide = root ? (opts.rootSide || X) : X;
+    var gameEng = (opts && opts.engineId) || ((mode === 'ai' && pendingGameEngineId) ? pendingGameEngineId : currentEngineId);
+    if (isEngineAvailable(gameEng)) currentGameEngineId = gameEng;
+    else currentGameEngineId = currentEngineId;
+    pendingGameEngineId = null;
     return {
       mode: mode,                               // 'ai' | 'local' | 'analysis'
       humanSide: opts.humanSide || X,           // only meaningful for mode 'ai'
       level: S.level,
+      engineId: currentGameEngineId,            // engine locked at game start
       root: root,                               // Int8Array or null
       rootSide: rootSide,
       main: [], redo: [],
@@ -375,7 +445,12 @@
   function setEngineBadge() {
     var b = $('engineBadge');
     if (!b) return;
-    var eng = getCurrentEngine();
+    if (G && G.mode === 'local') {
+      b.innerHTML = '<span class="engine-badge-title">AI ENGINE</span> Not used';
+      return;
+    }
+    var engId = (G && G.mode === 'ai' && currentGameEngineId) ? currentGameEngineId : currentEngineId;
+    var eng = getEngine(engId) || getCurrentEngine();
     var mode = 'main thread';
     if (WK && AW) {
       mode = (WK.mode === 'worker' && AW.mode === 'worker') ? 'worker (dual)' :
@@ -383,12 +458,11 @@
     }
     
     var logoPath = eng && eng.logo ? eng.logo : '';
-    
     var html = '';
     if (logoPath) {
-      html += '<img src="' + logoPath + '" alt="' + (eng ? eng.name : 'XO5 Forge V3') + ' logo" class="engine-badge-logo" onerror="this.style.display=\'none\'"> ';
+      html += '<img src="' + logoPath + '" alt="' + (eng ? eng.name : 'XO5 Forge V3 PRO') + ' logo" class="engine-badge-logo" onerror="this.style.display=\'none\'"> ';
     }
-    html += (eng ? eng.name : 'XO5 Forge V3') + ' · ' + mode;
+    html += (eng ? eng.name : 'XO5 Forge V3 PRO') + ' · ' + mode;
     b.innerHTML = html;
   }
 
@@ -457,9 +531,14 @@
     setEvalDisplay(null);
     showEngineInfo(null);
     setEngineBadge();
-    toast('Switched to ' + getCurrentEngine().name);
-    if (G && G.analysisMode) {
-      scheduleAnalysis(true);
+    /* If a game is already running, note the change applies to the next game */
+    if (G && G.mode === 'ai' && G.status === 'playing') {
+      toast('Default engine set to ' + getCurrentEngine().name + ' · Current game unchanged');
+    } else {
+      toast('Switched to ' + getCurrentEngine().name);
+      if (G && G.analysisMode) {
+        scheduleAnalysis(true);
+      }
     }
     return true;
   }
@@ -482,16 +561,19 @@
         if (!p || p.gen !== pool.gen) { delete pool.pending[id]; return; }
         delete pool.pending[id]; pool.inflight--;
         try {
-          var s = new E.State(), i;
+          /* Use the correct engine for the pool's purpose:
+             WK (AI moves) -> game engine; AW (analysis) -> analysis engine */
+          var Eng = (pool === WK) ? getGameEngineObj() : getAnalysisEngineObj();
+          var s = new Eng.State(), i;
           if (payload.root) for (i = 0; i < LEN; i++) if (payload.root[i]) s.play(i, payload.root[i]);
           (payload.moves || []).forEach(function (m) { s.play(m[0], m[1]); });
           var isInf = payload.timeMs === 0 || payload.timeMs === Infinity;
           var cap = isInf ? 1200 : Math.min(payload.timeMs || 900, 1200), r;
-          if (payload.type === 'move') r = E.chooseMove(s, payload.side, payload.level, cap, onProgress);
-          else if (payload.type === 'analyse') r = E.analyse(s, payload.side, { timeMs: cap, vct: payload.vct !== false, onProgress: onProgress });
-          else if (payload.type === 'threats') r = E.threatMap(s, payload.minLevel || 2);
-          else if (payload.type === 'explain') r = E.explainMove(s, payload.idx, payload.side);
-          else if (payload.type === 'forcing') r = E.solveForcing(s, payload.side, { maxPly: payload.maxPly || 8, nodes: 40000, timeMs: 1200, vct: true });
+          if (payload.type === 'move') r = Eng.chooseMove(s, payload.side, payload.level, cap, onProgress);
+          else if (payload.type === 'analyse') r = Eng.analyse(s, payload.side, { timeMs: cap, vct: payload.vct !== false, onProgress: onProgress });
+          else if (payload.type === 'threats') r = Eng.threatMap(s, payload.minLevel || 2);
+          else if (payload.type === 'explain') r = Eng.explainMove(s, payload.idx, payload.side);
+          else if (payload.type === 'forcing') r = Eng.solveForcing(s, payload.side, { maxPly: payload.maxPly || 8, nodes: 40000, timeMs: 1200, vct: true });
           else throw new Error('unknown type');
           resolve(r);
         } catch (err) { reject(err); }
@@ -500,11 +582,21 @@
   }
 
   function askAI(payload, onProgress) {
+    payload.engine = currentGameEngineId;
+    payload.engineObj = (ENGINE_REGISTRY[currentGameEngineId] || {}).engineObj;
     return askPool(WK, payload, onProgress);
   }
 
   function ask(payload, onProgress) {
+    payload.engine = currentEngineId;
+    payload.engineObj = (ENGINE_REGISTRY[currentEngineId] || {}).engineObj;
     return askPool(AW, payload, onProgress);
+  }
+
+  /* Get the LEVELS9 config for the current game's engine */
+  function getGameLevels() {
+    var Eng = getGameEngineObj();
+    return (Eng && Eng.LEVELS9) ? Eng.LEVELS9 : E.LEVELS9;
   }
 
   function isCancel(err) { return err && err.cancelled === true; }
@@ -1227,6 +1319,8 @@
     showEngineInfo(null);
     refreshAll();
     setEngineStatus('Ready');
+    setEngineBadge();
+    renderGameSetupEngineSelector();
     maybeAiMove();
     scheduleAnalysis();
     refreshThreats();
@@ -2057,7 +2151,8 @@
   function makeInlineGenerator(onMessage) {
     var wrkEl = $('workerSrc'); if (!wrkEl) return null;
     var host = {
-      XOEngine: E,
+      XOEngine: (typeof XOEngine !== 'undefined' ? XOEngine : E),
+      XOEnginePro: (typeof XOEnginePro !== 'undefined' ? XOEnginePro : ((typeof window !== 'undefined' && window.XOEnginePro) || E)),
       GEN_SLICE_MS: 12,                       // short slices: this is the UI thread
       postMessage: function (m) { onMessage({ data: m }); }
     };
@@ -3090,8 +3185,10 @@
     press('levelSeg', String(S.level)); press('sideSeg', S.side);
     press('clockSeg', String(S.clock)); press('timeSeg', String(S.timeMs));
     press('themeSeg', S.theme);
-    $('levelHint').textContent = 'Level ' + S.level + ' — ' + E.LEVELS9[S.level].label +
-      ' (depth ≤ ' + E.LEVELS9[S.level].maxDepth + ', ' + (E.LEVELS9[S.level].vct ? 'VCF+VCT' : E.LEVELS9[S.level].vcf ? 'VCF' : 'no solver') + ')';
+    /* Level hint uses the game engine's LEVELS9 when a game is running */
+    var lvls = getGameLevels();
+    $('levelHint').textContent = 'Level ' + S.level + ' — ' + lvls[S.level].label +
+      ' (depth ≤ ' + lvls[S.level].maxDepth + ', ' + (lvls[S.level].vct ? 'VCF+VCT' : lvls[S.level].vcf ? 'VCF' : 'no solver') + ')';
     sw('swSound', S.sound);
     sw('swAnalysisEngine', S.analysisEngine);
     sw('swAuto', S.auto, !S.analysisEngine); sw('swEval', S.evalBar, !S.analysisEngine); sw('swBest', S.bestMove, !S.analysisEngine);
@@ -3132,15 +3229,17 @@
       var eng = ENGINE_REGISTRY[id];
       var isAvailable = eng.status === 'available';
       var isSelected = currentEngineId === id;
+      var isGameEngine = currentGameEngineId === id;
       var statusClass = isAvailable ? 'engine-status-available' : 'engine-status-coming-soon';
-      var statusText = isAvailable ? '● Available' : '🔒 Coming Soon';
+      var generationText = eng.generation || (isAvailable ? 'Available' : 'Coming Soon');
+      var statusText = isAvailable ? ('● ' + generationText) : '🔒 Coming Soon';
       var cardClass = 'engine-card';
       if (!isAvailable) cardClass += ' engine-card-disabled';
       if (isSelected) cardClass += ' engine-card-selected';
-      
+
       var logoPath = eng.logo || '';
-      
-      html += '<div class="' + cardClass + '" data-engine="' + id + '"' + 
+
+      html += '<div class="' + cardClass + '" data-engine="' + id + '"' +
               (isAvailable ? '' : ' aria-disabled="true"') + '>';
       if (logoPath) {
         html += '<div class="engine-card-logo">';
@@ -3148,17 +3247,27 @@
         html += '</div>';
       }
       html += '<h3 class="engine-name">' + eng.name + '</h3>';
-      html += '<p class="engine-version">' + eng.version + '</p>';
+      html += '<p class="engine-version">' + eng.version + ' · ' + generationText + '</p>';
       html += '<p class="engine-desc">' + eng.description + '</p>';
+      if (isSelected && eng.features && eng.features.length) {
+        html += '<ul class="engine-features">';
+        for (var fi = 0; fi < Math.min(eng.features.length, 6); fi++) {
+          html += '<li>' + eng.features[fi] + '</li>';
+        }
+        html += '</ul>';
+      }
       html += '<div class="engine-status ' + statusClass + '">';
       html += '<span class="engine-status-icon"></span>';
       html += statusText;
+      if (isGameEngine && G && G.mode === 'ai') html += ' · <em>Current game</em>';
       html += '</div>';
+      if (isSelected) {
+        html += '<div style="font-size:11px;color:var(--brass);margin-top:4px;font-weight:600">DEFAULT ENGINE</div>';
+      }
       html += '</div>';
     });
     grid.innerHTML = html;
-    
-    // Add click handlers only if grid has children
+
     if (grid.children.length > 0) {
       [].forEach.call(grid.querySelectorAll('.engine-card'), function (card) {
         card.onclick = function () {
@@ -3169,15 +3278,61 @@
           }
           if (switchEngine(id)) {
             renderEngineSelector();
+            renderGameSetupEngineSelector();
           }
         };
       });
     }
   }
+
+  /* Game-Setup Engine Selector (on the New Game / play screen) */
+  function renderGameSetupEngineSelector() {
+    var el = $('setupEngineSelect');
+    if (!el) return;
+    var sel = pendingGameEngineId || currentEngineId;
+    var html = '';
+    Object.keys(ENGINE_REGISTRY).forEach(function (id) {
+      var eng = ENGINE_REGISTRY[id];
+      var isAvailable = eng.status === 'available';
+      var isSelected = sel === id;
+      var cardClass = 'setup-engine-card' + (isSelected ? ' setup-engine-card-selected' : '') + (!isAvailable ? ' setup-engine-card-disabled' : '');
+      html += '<button class="' + cardClass + '" data-engid="' + id + '" ' + (!isAvailable ? 'disabled aria-disabled="true"' : '') + '>';
+      html += '<div class="sec-logo">';
+      html += '<img src="' + (eng.logo || '') + '" alt="' + eng.name + '" class="sec-logo-img" onerror="this.style.display=\'none\'">';
+      html += '</div>';
+      html += '<div class="sec-info">';
+      html += '<span class="sec-name">' + eng.name + '</span>';
+      html += '<span class="sec-gen">' + (eng.generation || (isAvailable ? 'Available' : 'Coming Soon')) + '</span>';
+      if (isAvailable) {
+        html += '<span class="sec-desc">' + (eng.description || '') + '</span>';
+      } else {
+        html += '<span class="sec-desc sec-desc-soon">Coming Soon</span>';
+      }
+      html += '</div>';
+      if (isSelected) html += '<span class="sec-check" aria-hidden="true">✓</span>';
+      html += '</button>';
+    });
+    el.innerHTML = html;
+    [].forEach.call(el.querySelectorAll('.setup-engine-card:not(.setup-engine-card-disabled)'), function (card) {
+      card.onclick = function () {
+        var id = this.dataset.engid;
+        if (!isEngineAvailable(id)) return;
+        pendingGameEngineId = id;
+        renderGameSetupEngineSelector();
+        /* Update description panel if present */
+        var descEl = $('setupEngineDesc');
+        if (descEl) {
+          var eng = ENGINE_REGISTRY[id];
+          descEl.textContent = eng.descLong || eng.description || '';
+        }
+      };
+    });
+  }
   $('levelSeg').onclick = function (e) {
     var b = e.target.closest('button'); if (!b) return;
     S.level = clamp(+b.dataset.v, 1, 9); applySettings();
-    toast('AI level ' + S.level + ' — ' + E.LEVELS9[S.level].label);
+    var lvls = getGameLevels();
+    toast('AI level ' + S.level + ' — ' + lvls[S.level].label);
   };
   $('sideSeg').onclick = function (e) {
     var b = e.target.closest('button'); if (!b) return;
@@ -3451,7 +3606,16 @@
     validateEngineSelection: validateEngineSelection,
     get currentEngineId() { return currentEngineId; },
     set currentEngineId(v) { currentEngineId = v; },
+    get currentGameEngineId() { return currentGameEngineId; },
+    set currentGameEngineId(v) { currentGameEngineId = v; },
+    get pendingGameEngineId() { return pendingGameEngineId; },
+    set pendingGameEngineId(v) { pendingGameEngineId = v; },
     setEngineBadge: setEngineBadge,
+    getGameEngineObj: getGameEngineObj,
+    getAnalysisEngineObj: getAnalysisEngineObj,
+    getGameEngineName: getGameEngineName,
+    renderEngineSelector: renderEngineSelector,
+    renderGameSetupEngineSelector: renderGameSetupEngineSelector,
     ENGINE_LOGO_MAP: {
       'forge_v3': ENGINE_REGISTRY.forge_v3.logo,
       'forge_v3_pro': ENGINE_REGISTRY.forge_v3_pro.logo,

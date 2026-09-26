@@ -419,11 +419,11 @@ async function until(fn, maxMs = 12000) {
       }
     }
     ok(!!v3Card, 'V3 card exists');
-    ok(v3Card && v3Card.classList.contains('forge-card-current'), 'V3 card has current styling');
-    ok(v3Card && v3Card.textContent.indexOf('CURRENT ENGINE') >= 0, 'V3 marked as current engine');
+    ok(v3Card && v3Card.classList.contains('forge-card-prev'), 'V3 card has previous generation styling');
+    ok(v3Card && v3Card.textContent.indexOf('Previous Generation') >= 0, 'V3 marked as previous generation');
     ok(v3Card && v3Card.textContent.indexOf('Available') >= 0, 'V3 marked as available');
     
-    // Check other engines are marked as coming soon
+    // Check V3 PRO is current generation and available
     var v3ProCard = null;
     for (var i = 0; i < forgeCards.length; i++) {
       if ((forgeCards[i].textContent || '').indexOf('XO5 Forge V3 PRO') >= 0) {
@@ -432,8 +432,9 @@ async function until(fn, maxMs = 12000) {
       }
     }
     ok(!!v3ProCard, 'V3 PRO card exists');
-    ok(v3ProCard && v3ProCard.classList.contains('forge-card-coming'), 'V3 PRO marked as coming soon');
-    ok(v3ProCard && v3ProCard.textContent.indexOf('Coming Soon') >= 0, 'V3 PRO status text');
+    ok(v3ProCard && v3ProCard.classList.contains('forge-card-current'), 'V3 PRO marked as current engine');
+    ok(v3ProCard && v3ProCard.textContent.indexOf('Current Generation') >= 0, 'V3 PRO status text');
+    ok(v3ProCard && v3ProCard.textContent.indexOf('Available') >= 0, 'V3 PRO marked as available');
     
     var v4Card = null;
     for (var i = 0; i < forgeCards.length; i++) {
@@ -482,12 +483,13 @@ async function until(fn, maxMs = 12000) {
     ok(!!XO.ENGINE_REGISTRY.forge_v4, 'V4 engine registered');
     ok(!!XO.ENGINE_REGISTRY.forge_v4_pro, 'V4 PRO engine registered');
     ok(XO.ENGINE_REGISTRY.forge_v3.status === 'available', 'V3 is available');
-    ok(XO.ENGINE_REGISTRY.forge_v3_pro.status === 'coming-soon', 'V3 PRO is coming soon');
+    ok(XO.ENGINE_REGISTRY.forge_v3_pro.status === 'available', 'V3 PRO is available');
     ok(XO.ENGINE_REGISTRY.forge_v4.status === 'coming-soon', 'V4 is coming soon');
     ok(XO.ENGINE_REGISTRY.forge_v4_pro.status === 'coming-soon', 'V4 PRO is coming soon');
     
-    ok(XO.getCurrentEngine().id === 'forge_v3', 'V3 is the default engine');
+    ok(XO.getCurrentEngine().id === 'forge_v3_pro', 'V3 PRO is the default engine');
     ok(XO.isEngineAvailable('forge_v3'), 'V3 is available');
+    ok(XO.isEngineAvailable('forge_v3_pro'), 'V3 PRO is available');
     ok(!XO.isEngineAvailable('forge_v4'), 'V4 is not available');
     
     // Check engine selector has logos (structure check, not actual loading)
@@ -511,10 +513,9 @@ async function until(fn, maxMs = 12000) {
     ok(XO.ENGINE_REGISTRY.forge_v4_pro.logo === 'assets/forge-v4-pro.png', 'V4 PRO logo path correct');
     
     const available = XO.getAvailableEngines();
-    ok(available.length === 1 && available[0] === 'forge_v3', 'Only V3 is available');
+    ok(available.length === 2 && available.includes('forge_v3') && available.includes('forge_v3_pro'), 'V3 and V3 PRO are available');
     
     // Test switching to V3 (should succeed)
-    const beforeSwitch = XO.getCurrentEngine().id;
     XO.switchEngine('forge_v3');
     ok(XO.getCurrentEngine().id === 'forge_v3', 'Switching to V3 succeeds');
     
@@ -522,20 +523,80 @@ async function until(fn, maxMs = 12000) {
     XO.switchEngine('forge_v4');
     ok(XO.getCurrentEngine().id === 'forge_v3', 'Switching to V4 fails, stays on V3');
     
+    // Test switching to V3 PRO (should succeed)
+    XO.switchEngine('forge_v3_pro');
+    ok(XO.getCurrentEngine().id === 'forge_v3_pro', 'Switching to V3 PRO succeeds');
+
     // Test validation falls back to available engine
     XO.currentEngineId = 'forge_v4';
     XO.validateEngineSelection();
-    ok(XO.getCurrentEngine().id === 'forge_v3', 'Validation falls back to available engine');
-    
-    // Test localStorage persistence simulation
-    XO.setCurrentEngine('forge_v3');
-    ok(XO.getCurrentEngine().id === 'forge_v3', 'V3 can be set and persists');
+    ok(XO.getCurrentEngine().id === 'forge_v3_pro', 'Validation falls back to available engine');
     
     // Test engine badge updates
     XO.setEngineBadge();
     const badge = $('engineBadge');
     ok(!!badge, 'Engine badge element exists');
-    ok(badge.textContent.indexOf('XO5 Forge V3') >= 0, 'Engine badge shows V3 name');
+    ok(badge.textContent.indexOf('XO5 Forge V3 PRO') >= 0, 'Engine badge shows V3 PRO name');
+  }
+
+  /* ------------------------------------------------------------------ */
+  section('Engine selection & switching for gameplay (spec #45 & #46)');
+  {
+    // Test 1: Select V3 PRO -> start game -> verify V3 PRO is actually active
+    XO.startGame('ai', { humanSide: 1, engineId: 'forge_v3_pro' });
+    ok(XO.currentGameEngineId === 'forge_v3_pro', 'Select V3 PRO: game uses V3 PRO');
+    ok(XO.getGameEngineName().indexOf('V3 PRO') >= 0, 'Game engine name reflects V3 PRO');
+    var badge = $('engineBadge');
+    ok(badge && badge.textContent.indexOf('V3 PRO') >= 0, 'Engine badge shows V3 PRO during gameplay');
+
+    // Test 2: Select V3 -> start game -> verify V3 is actually active
+    XO.startGame('ai', { humanSide: 1, engineId: 'forge_v3' });
+    ok(XO.currentGameEngineId === 'forge_v3', 'Select V3: game uses V3');
+    ok(XO.getGameEngineName().indexOf('V3') >= 0 && XO.getGameEngineName().indexOf('PRO') < 0, 'Game engine name reflects V3');
+    badge = $('engineBadge');
+    ok(badge && badge.textContent.indexOf('V3') >= 0 && badge.textContent.indexOf('PRO') < 0, 'Engine badge shows V3 during gameplay');
+
+    // Test 3: Settings default = V3 PRO, Game Setup = V3 -> current game uses V3
+    XO.currentEngineId = 'forge_v3_pro';
+    XO.pendingGameEngineId = 'forge_v3';
+    XO.startGame('ai', { humanSide: 1 });
+    ok(XO.currentGameEngineId === 'forge_v3', 'Settings default V3 PRO + Game Setup V3 -> game uses V3');
+    ok(XO.currentEngineId === 'forge_v3_pro', 'Default engine setting remains V3 PRO');
+
+    // Test 4: Settings default = V3, Game Setup = V3 PRO -> current game uses V3 PRO
+    XO.currentEngineId = 'forge_v3';
+    XO.pendingGameEngineId = 'forge_v3_pro';
+    XO.startGame('ai', { humanSide: 1 });
+    ok(XO.currentGameEngineId === 'forge_v3_pro', 'Settings default V3 + Game Setup V3 PRO -> game uses V3 PRO');
+    ok(XO.currentEngineId === 'forge_v3', 'Default engine setting remains V3');
+
+    // Test 5: Human vs Human: AI engine is not used
+    XO.startGame('local', {});
+    badge = $('engineBadge');
+    ok(badge && badge.textContent.indexOf('Not used') >= 0, 'Human vs Human: AI engine is not used');
+
+    // Test 6: V4 and V4 PRO cannot be selected for gameplay
+    XO.pendingGameEngineId = 'forge_v4';
+    XO.startGame('ai', { humanSide: 1 });
+    ok(XO.currentGameEngineId !== 'forge_v4', 'V4 cannot be selected for game');
+
+    // Test 7: Engine switching: V3 -> V3 PRO -> V3
+    XO.switchEngine('forge_v3');
+    ok(XO.currentEngineId === 'forge_v3', 'Switched to V3');
+    XO.switchEngine('forge_v3_pro');
+    ok(XO.currentEngineId === 'forge_v3_pro', 'Switched to V3 PRO');
+    XO.switchEngine('forge_v3');
+    ok(XO.currentEngineId === 'forge_v3', 'Switched back to V3');
+    XO.switchEngine('forge_v3_pro'); // restore default
+
+    // Test 8: Stale search protection on engine switch
+    XO.startGame('analysis', {});
+    XO.scheduleAnalysis(true);
+    var tokBefore = XO.analysisTokenValue ? XO.analysisTokenValue() : 0;
+    XO.switchEngine('forge_v3');
+    var tokAfter = XO.analysisTokenValue ? XO.analysisTokenValue() : 0;
+    ok(tokAfter >= tokBefore, 'Search token invalidated on engine switch');
+    XO.switchEngine('forge_v3_pro');
   }
 
   /* ------------------------------------------------------------------ */
