@@ -51,6 +51,128 @@
   };
   var S = Object.assign({}, DEFAULTS);
 
+  /* ---------------- engine registry ---------------- */
+  var ENGINE_REGISTRY = {
+    forge_v3: {
+      id: 'forge_v3',
+      name: 'XO5 Forge V3',
+      version: 'V3',
+      status: 'available',
+      description: 'Current stable XO5 Forge engine.',
+      logo: 'assets/forge-v3.png',
+      capabilities: {
+        analysis: true,
+        candidates: true,
+        pv: true,
+        forcingSolver: true,
+        puzzles: true,
+        realtimeEval: true
+      }
+    },
+    forge_v3_pro: {
+      id: 'forge_v3_pro',
+      name: 'XO5 Forge V3 PRO',
+      version: 'V3 PRO',
+      status: 'coming-soon',
+      description: 'Enhanced/professional variant of XO5 Forge V3.',
+      logo: 'assets/forge-v3-pro.png',
+      capabilities: {
+        analysis: true,
+        candidates: true,
+        pv: true,
+        forcingSolver: true,
+        puzzles: true,
+        realtimeEval: true
+      }
+    },
+    forge_v4: {
+      id: 'forge_v4',
+      name: 'XO5 Forge V4',
+      version: 'V4',
+      status: 'coming-soon',
+      description: 'Next generation XO5 Forge engine.',
+      logo: 'assets/forge-v4.png',
+      capabilities: {
+        analysis: true,
+        candidates: true,
+        pv: true,
+        forcingSolver: true,
+        puzzles: true,
+        realtimeEval: true
+      }
+    },
+    forge_v4_pro: {
+      id: 'forge_v4_pro',
+      name: 'XO5 Forge V4 PRO',
+      version: 'V4 PRO',
+      status: 'coming-soon',
+      description: 'Next generation professional XO5 Forge engine.',
+      logo: 'assets/forge-v4-pro.png',
+      capabilities: {
+        analysis: true,
+        candidates: true,
+        pv: true,
+        forcingSolver: true,
+        puzzles: true,
+        realtimeEval: true
+      }
+    }
+  };
+
+  var ENGINE_DEFAULT = 'forge_v3';
+  var ENGINE_STORAGE_KEY = 'xo5.selectedEngine3';
+  var currentEngineId = load(ENGINE_STORAGE_KEY, ENGINE_DEFAULT);
+
+  function getEngine(id) {
+    return ENGINE_REGISTRY[id] || null;
+  }
+
+  function getCurrentEngine() {
+    return getEngine(currentEngineId);
+  }
+
+  function getAvailableEngines() {
+    return Object.keys(ENGINE_REGISTRY).filter(function (id) {
+      return ENGINE_REGISTRY[id].status === 'available';
+    });
+  }
+
+  function isEngineAvailable(id) {
+    var eng = getEngine(id);
+    return eng && eng.status === 'available';
+  }
+
+  function setCurrentEngine(id) {
+    if (!ENGINE_REGISTRY[id]) {
+      console.warn('Unknown engine ID: ' + id);
+      return false;
+    }
+    if (ENGINE_REGISTRY[id].status !== 'available') {
+      console.warn('Engine not available: ' + id);
+      return false;
+    }
+    currentEngineId = id;
+    store(ENGINE_STORAGE_KEY, id);
+    return true;
+  }
+
+  function validateEngineSelection() {
+    if (!isEngineAvailable(currentEngineId)) {
+      var available = getAvailableEngines();
+      if (available.length > 0) {
+        currentEngineId = available[0];
+        store(ENGINE_STORAGE_KEY, currentEngineId);
+      } else {
+        currentEngineId = ENGINE_DEFAULT;
+      }
+    }
+    return currentEngineId;
+  }
+
+  /* Initialize engine selection on load */
+  validateEngineSelection();
+  setEngineBadge();
+
   var STATS = load('stats3', {
     played: 0, wins: 0, losses: 0, draws: 0, streak: 0, best: 0, moveTotal: 0,
     firstMoves: 0, centerFirst: 0, firstDistTotal: 0,
@@ -253,9 +375,21 @@
   function setEngineBadge() {
     var b = $('engineBadge');
     if (!b) return;
-    var mode = (WK.mode === 'worker' && AW.mode === 'worker') ? 'worker (dual)' :
-               (WK.mode === 'worker' || AW.mode === 'worker') ? 'worker' : 'main thread';
-    b.textContent = mode;
+    var eng = getCurrentEngine();
+    var mode = 'main thread';
+    if (WK && AW) {
+      mode = (WK.mode === 'worker' && AW.mode === 'worker') ? 'worker (dual)' :
+             (WK.mode === 'worker' || AW.mode === 'worker') ? 'worker' : 'main thread';
+    }
+    
+    var logoPath = eng && eng.logo ? eng.logo : '';
+    
+    var html = '';
+    if (logoPath) {
+      html += '<img src="' + logoPath + '" alt="' + (eng ? eng.name : 'XO5 Forge V3') + ' logo" class="engine-badge-logo" onerror="this.style.display=\'none\'"> ';
+    }
+    html += (eng ? eng.name : 'XO5 Forge V3') + ' · ' + mode;
+    b.innerHTML = html;
   }
 
   function onPoolMessage(pool, e) {
@@ -310,6 +444,24 @@
   function cancelAllSearches(reason) {
     cancelAI(reason);
     cancelAnalysis(reason);
+  }
+
+  function switchEngine(newEngineId) {
+    if (!setCurrentEngine(newEngineId)) {
+      toast('Cannot select ' + (ENGINE_REGISTRY[newEngineId] ? ENGINE_REGISTRY[newEngineId].name : newEngineId));
+      return false;
+    }
+    cancelAllSearches('engine-switch');
+    cacheClear();
+    current = null;
+    setEvalDisplay(null);
+    showEngineInfo(null);
+    setEngineBadge();
+    toast('Switched to ' + getCurrentEngine().name);
+    if (G && G.analysisMode) {
+      scheduleAnalysis(true);
+    }
+    return true;
   }
 
   function askPool(pool, payload, onProgress) {
@@ -2933,6 +3085,7 @@
   function applySettings(rebuild) {
     document.documentElement.setAttribute('data-theme', S.theme);
     document.documentElement.style.setProperty('--board-size', S.boardSize + 'px');
+    setEngineBadge();
     $('frame').classList.toggle('no-coords', !S.coords);
     press('levelSeg', String(S.level)); press('sideSeg', S.side);
     press('clockSeg', String(S.clock)); press('timeSeg', String(S.timeMs));
@@ -2963,13 +3116,64 @@
     el.disabled = !!disabled;
   }
 
-  $('settingsBtn').onclick = function () { SND.click(); openModal('settingsOverlay'); };
+  $('settingsBtn').onclick = function () { SND.click(); openModal('settingsOverlay'); renderEngineSelector(); };
   $('themeBtn').onclick = function () { S.theme = S.theme === 'light' ? 'dark' : 'light'; applySettings(); };
   $('setTabs').onclick = function (e) {
     var b = e.target.closest('button'); if (!b) return;
     [].forEach.call(this.querySelectorAll('button'), function (x) { x.setAttribute('aria-selected', String(x === b)); });
     [].forEach.call(document.querySelectorAll('.tabpanel'), function (p) { p.hidden = p.dataset.panel !== b.dataset.tab; });
   };
+
+  function renderEngineSelector() {
+    var grid = $('engineGrid');
+    if (!grid) return;
+    var html = '';
+    Object.keys(ENGINE_REGISTRY).forEach(function (id) {
+      var eng = ENGINE_REGISTRY[id];
+      var isAvailable = eng.status === 'available';
+      var isSelected = currentEngineId === id;
+      var statusClass = isAvailable ? 'engine-status-available' : 'engine-status-coming-soon';
+      var statusText = isAvailable ? '● Available' : '🔒 Coming Soon';
+      var cardClass = 'engine-card';
+      if (!isAvailable) cardClass += ' engine-card-disabled';
+      if (isSelected) cardClass += ' engine-card-selected';
+      
+      var logoPath = eng.logo || '';
+      
+      html += '<div class="' + cardClass + '" data-engine="' + id + '"' + 
+              (isAvailable ? '' : ' aria-disabled="true"') + '>';
+      if (logoPath) {
+        html += '<div class="engine-card-logo">';
+        html += '<img src="' + logoPath + '" alt="' + eng.name + ' logo" class="engine-logo-img" onerror="this.style.display=\'none\'">';
+        html += '</div>';
+      }
+      html += '<h3 class="engine-name">' + eng.name + '</h3>';
+      html += '<p class="engine-version">' + eng.version + '</p>';
+      html += '<p class="engine-desc">' + eng.description + '</p>';
+      html += '<div class="engine-status ' + statusClass + '">';
+      html += '<span class="engine-status-icon"></span>';
+      html += statusText;
+      html += '</div>';
+      html += '</div>';
+    });
+    grid.innerHTML = html;
+    
+    // Add click handlers only if grid has children
+    if (grid.children.length > 0) {
+      [].forEach.call(grid.querySelectorAll('.engine-card'), function (card) {
+        card.onclick = function () {
+          var id = this.dataset.engine;
+          if (!isEngineAvailable(id)) {
+            toast(ENGINE_REGISTRY[id].name + ' is coming soon.');
+            return;
+          }
+          if (switchEngine(id)) {
+            renderEngineSelector();
+          }
+        };
+      });
+    }
+  }
   $('levelSeg').onclick = function (e) {
     var b = e.target.closest('button'); if (!b) return;
     S.level = clamp(+b.dataset.v, 1, 9); applySettings();
@@ -3203,6 +3407,11 @@
   applySettings();
   renderPuzzles();
   tickerStart();
+  
+  // Render engine selector after DOM is ready
+  setTimeout(function () {
+    renderEngineSelector();
+  }, 100);
 
   var initialMoves = null, initialRoute = 'home';
   try {
@@ -3233,6 +3442,22 @@
     posKey: posKey, analysisTokenValue: function () { return analysisToken; },
     gradeOf: function (i) { return line()[i] && line()[i].quality; },
     isSearching: function () { return searching; },
+    ENGINE_REGISTRY: ENGINE_REGISTRY,
+    getCurrentEngine: getCurrentEngine,
+    getAvailableEngines: getAvailableEngines,
+    isEngineAvailable: isEngineAvailable,
+    setCurrentEngine: setCurrentEngine,
+    switchEngine: switchEngine,
+    validateEngineSelection: validateEngineSelection,
+    get currentEngineId() { return currentEngineId; },
+    set currentEngineId(v) { currentEngineId = v; },
+    setEngineBadge: setEngineBadge,
+    ENGINE_LOGO_MAP: {
+      'forge_v3': ENGINE_REGISTRY.forge_v3.logo,
+      'forge_v3_pro': ENGINE_REGISTRY.forge_v3_pro.logo,
+      'forge_v4': ENGINE_REGISTRY.forge_v4.logo,
+      'forge_v4_pro': ENGINE_REGISTRY.forge_v4_pro.logo
+    },
     PUZZLES: PUZZLES,
     /* ---- puzzle bank ---- */
     BUILTIN_PUZZLES: BUILTIN_PUZZLES, CONTRIBUTED_PUZZLES: CONTRIBUTED_PUZZLES,

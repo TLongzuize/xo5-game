@@ -500,6 +500,88 @@ header.top.stuck{border-bottom-color:var(--line)}
   .home-sec{margin-bottom:var(--s7)}
 }
 
+/* ----------------------------------------------------------- engine showcase */
+.forge-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:var(--s5)
+}
+.forge-card{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r3);
+  padding:20px;transition:border-color .18s,box-shadow .18s,transform .16s;
+  position:relative;overflow:hidden
+}
+.forge-card:hover{
+  border-color:var(--line-strong);box-shadow:var(--sh2);transform:translateY(-2px)
+}
+.forge-card-current{
+  border-color:var(--brass);background:color-mix(in srgb,var(--brass-soft) 8%,var(--card));
+  box-shadow:0 0 0 1px var(--brass-soft)
+}
+.forge-card-coming{
+  opacity:.75
+}
+.forge-card-coming:hover{
+  opacity:1
+}
+.forge-card-inner{
+  display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center
+}
+.forge-logo{
+  width:100%;height:120px;display:flex;align-items:center;justify-content:center;
+  background:var(--card-2);border-radius:var(--r2);overflow:hidden
+}
+.forge-logo-img{
+  max-width:100%;max-height:100%;object-fit:contain
+}
+.forge-content{
+  display:flex;flex-direction:column;gap:8px;flex:1
+}
+.forge-name{
+  font-family:Archivo,sans-serif;font-size:15px;font-weight:700;margin:0;
+  letter-spacing:-.018em;color:var(--text)
+}
+.forge-desc{
+  font-size:13px;color:var(--text-2);margin:0;line-height:1.5;flex:1
+}
+.forge-status{
+  display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;
+  padding:4px 10px;border-radius:99px;background:var(--card-2);border:1px solid var(--line);
+  justify-content:center
+}
+.forge-status-dot{
+  width:5px;height:5px;border-radius:50%;flex:none
+}
+.forge-status-current{
+  color:var(--brass);background:color-mix(in srgb,var(--brass-soft) 15%,var(--card-2));
+  border-color:color-mix(in srgb,var(--brass) 30%,transparent)
+}
+.forge-status-current .forge-status-dot{
+  background:var(--brass)
+}
+.forge-status-available{
+  color:var(--ok);background:color-mix(in srgb,var(--ok) 8%,var(--card-2));
+  border-color:color-mix(in srgb,var(--ok) 30%,transparent)
+}
+.forge-status-available .forge-status-dot{
+  background:var(--ok)
+}
+.forge-status-coming{
+  color:var(--text-3);background:var(--card-2);border-color:var(--line)
+}
+.forge-status-coming .forge-status-dot{
+  background:var(--text-3)
+}
+@media (max-width:1024px){
+  .forge-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:600px){
+  .forge-grid{grid-template-columns:1fr}
+  .forge-logo{height:100px}
+}
+@media (prefers-reduced-motion:reduce){
+  .forge-card{transition:none}
+  .forge-card:hover{transform:none}
+}
+
 /* ----------------------------------------------------------- how to play */
 .howto{
   background:var(--card);border:1px solid var(--line);border-radius:var(--r4);
@@ -978,6 +1060,53 @@ body.puzzle-mode .cell.heat,body.puzzle-mode .cell.thr,body.puzzle-mode .cell.hi
 .set-row .hint{font-size:12px;color:var(--text-3);margin-top:2px}
 .switch{position:relative;width:44px;height:25px;border-radius:99px;border:1px solid var(--line-strong);
   background:var(--card-2);cursor:pointer;flex:none;transition:background .18s,border-color .18s}
+
+/* ---- engine selector cards ---- */
+.engine-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:8px}
+.engine-card{
+  position:relative;background:var(--card-2);border:1px solid var(--line);border-radius:var(--r3);
+  padding:16px;cursor:pointer;transition:border-color .18s,box-shadow .18s,transform .16s;
+  display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center
+}
+.engine-card:hover:not(.engine-card-disabled){
+  border-color:var(--line-strong);box-shadow:var(--sh2);transform:translateY(-2px)
+}
+.engine-card-selected{
+  border-color:var(--brass);background:color-mix(in srgb,var(--brass-soft) 20%,var(--card-2));
+  box-shadow:0 0 0 2px var(--brass-soft)
+}
+.engine-card-disabled{
+  opacity:.6;cursor:not-allowed;background:var(--card)
+}
+.engine-card-disabled:hover{border-color:var(--line);transform:none;box-shadow:none}
+.engine-card-logo{
+  width:100%;height:80px;display:flex;align-items:center;justify-content:center;
+  background:var(--card);border-radius:var(--r2);overflow:hidden;margin-bottom:4px
+}
+.engine-logo-img{
+  max-width:100%;max-height:100%;object-fit:contain
+}
+.engine-name{font-family:Archivo,sans-serif;font-size:15px;font-weight:700;margin:0;
+  letter-spacing:-.018em;color:var(--text)}
+.engine-version{font-size:11.5px;font-weight:600;color:var(--brass);letter-spacing:.01em;margin:0}
+.engine-desc{font-size:13px;color:var(--text-2);margin:0;line-height:1.5}
+.engine-status{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+  margin-top:4px;padding:4px 10px;border-radius:99px;background:var(--card);border:1px solid var(--line)}
+.engine-status-available{color:var(--ok);background:color-mix(in srgb,var(--ok) 8%,var(--card));
+  border-color:color-mix(in srgb,var(--ok) 30%,transparent)}
+.engine-status-coming-soon{color:var(--text-3);background:var(--card-2);
+  border-color:var(--line)}
+.engine-status-icon{width:5px;height:5px;border-radius:50%;flex:none}
+.engine-status-available .engine-status-icon{background:var(--ok)}
+.engine-status-coming-soon .engine-status-icon{background:var(--text-3)}
+.engine-badge-logo{
+  width:20px;height:20px;object-fit:contain;vertical-align:middle;margin-right:6px;
+  border-radius:4px
+}
+@media (prefers-reduced-motion:reduce){
+  .engine-card{transition:none}
+  .engine-card:hover:not(.engine-card-disabled){transform:none}
+}
 .switch::after{content:"";position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;
   background:var(--text-3);transition:transform .2s var(--ease),background .18s}
 .switch[aria-checked="true"]{background:var(--accent);border-color:var(--accent)}
@@ -1134,6 +1263,81 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
         </div>
       </div>
     </div>
+
+    <!-- ========================= ENGINE SHOWCASE ========================= -->
+    <section class="home-sec" aria-labelledby="forgeHead">
+      <div class="sec-head">
+        <p class="sec-eyebrow">ENGINE</p>
+        <h3 id="forgeHead">XO5 Forge</h3>
+        <p>The tactical engine family powering XO5.</p>
+      </div>
+      <div class="forge-grid">
+        <div class="forge-card forge-card-current">
+          <div class="forge-card-inner">
+            <div class="forge-logo">
+              <img src="assets/forge-v3.png" alt="XO5 Forge V3 logo" class="forge-logo-img" onerror="this.style.display='none'">
+            </div>
+            <div class="forge-content">
+              <h4 class="forge-name">XO5 Forge V3</h4>
+              <p class="forge-desc">Current production engine powering XO5 today.</p>
+              <div class="forge-status forge-status-current">
+                <span class="forge-status-dot"></span>
+                <span class="forge-status-text">CURRENT ENGINE</span>
+              </div>
+              <div class="forge-status forge-status-available">
+                <span class="forge-status-dot"></span>
+                <span class="forge-status-text">Available</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="forge-card forge-card-coming">
+          <div class="forge-card-inner">
+            <div class="forge-logo">
+              <img src="assets/forge-v3-pro.png" alt="XO5 Forge V3 PRO logo" class="forge-logo-img" onerror="this.style.display='none'">
+            </div>
+            <div class="forge-content">
+              <h4 class="forge-name">XO5 Forge V3 PRO</h4>
+              <p class="forge-desc">A future enhanced variant of the Forge V3 generation.</p>
+              <div class="forge-status forge-status-coming">
+                <span class="forge-status-dot"></span>
+                <span class="forge-status-text">Coming Soon</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="forge-card forge-card-coming">
+          <div class="forge-card-inner">
+            <div class="forge-logo">
+              <img src="assets/forge-v4.png" alt="XO5 Forge V4 logo" class="forge-logo-img" onerror="this.style.display='none'">
+            </div>
+            <div class="forge-content">
+              <h4 class="forge-name">XO5 Forge V4</h4>
+              <p class="forge-desc">Next-generation Forge engine. Coming soon.</p>
+              <div class="forge-status forge-status-coming">
+                <span class="forge-status-dot"></span>
+                <span class="forge-status-text">Coming Soon</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="forge-card forge-card-coming">
+          <div class="forge-card-inner">
+            <div class="forge-logo">
+              <img src="assets/forge-v4-pro.png" alt="XO5 Forge V4 PRO logo" class="forge-logo-img" onerror="this.style.display='none'">
+            </div>
+            <div class="forge-content">
+              <h4 class="forge-name">XO5 Forge V4 PRO</h4>
+              <p class="forge-desc">Future flagship Forge variant. Coming soon.</p>
+              <div class="forge-status forge-status-coming">
+                <span class="forge-status-dot"></span>
+                <span class="forge-status-text">Coming Soon</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- ========================= GAME MODES ========================= -->
     <section class="home-sec" aria-labelledby="modesHead">
@@ -1615,6 +1819,11 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
         <div class="set-row"><div><div class="label">Move quality labels</div></div><button class="switch" id="swQuality" role="switch"></button></div>
         <div class="set-row"><div><div class="label">Move explanations</div></div><button class="switch" id="swExplain" role="switch"></button></div>
         <div class="set-row"><div><div class="label">Analysis cache</div><div class="hint">Reuse results for positions already searched</div></div><button class="switch" id="swCache" role="switch"></button></div>
+      </div>
+      <div class="tabpanel" data-panel="engine" hidden>
+        <div class="engine-grid" id="engineGrid">
+          <!-- Engine cards will be populated by JavaScript -->
+        </div>
       </div>
       <div class="tabpanel" data-panel="display" hidden>
         <div class="set-row"><div><div class="label">Theme</div></div>
@@ -3185,6 +3394,128 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
   };
   var S = Object.assign({}, DEFAULTS);
 
+  /* ---------------- engine registry ---------------- */
+  var ENGINE_REGISTRY = {
+    forge_v3: {
+      id: 'forge_v3',
+      name: 'XO5 Forge V3',
+      version: 'V3',
+      status: 'available',
+      description: 'Current stable XO5 Forge engine.',
+      logo: 'assets/forge-v3.png',
+      capabilities: {
+        analysis: true,
+        candidates: true,
+        pv: true,
+        forcingSolver: true,
+        puzzles: true,
+        realtimeEval: true
+      }
+    },
+    forge_v3_pro: {
+      id: 'forge_v3_pro',
+      name: 'XO5 Forge V3 PRO',
+      version: 'V3 PRO',
+      status: 'coming-soon',
+      description: 'Enhanced/professional variant of XO5 Forge V3.',
+      logo: 'assets/forge-v3-pro.png',
+      capabilities: {
+        analysis: true,
+        candidates: true,
+        pv: true,
+        forcingSolver: true,
+        puzzles: true,
+        realtimeEval: true
+      }
+    },
+    forge_v4: {
+      id: 'forge_v4',
+      name: 'XO5 Forge V4',
+      version: 'V4',
+      status: 'coming-soon',
+      description: 'Next generation XO5 Forge engine.',
+      logo: 'assets/forge-v4.png',
+      capabilities: {
+        analysis: true,
+        candidates: true,
+        pv: true,
+        forcingSolver: true,
+        puzzles: true,
+        realtimeEval: true
+      }
+    },
+    forge_v4_pro: {
+      id: 'forge_v4_pro',
+      name: 'XO5 Forge V4 PRO',
+      version: 'V4 PRO',
+      status: 'coming-soon',
+      description: 'Next generation professional XO5 Forge engine.',
+      logo: 'assets/forge-v4-pro.png',
+      capabilities: {
+        analysis: true,
+        candidates: true,
+        pv: true,
+        forcingSolver: true,
+        puzzles: true,
+        realtimeEval: true
+      }
+    }
+  };
+
+  var ENGINE_DEFAULT = 'forge_v3';
+  var ENGINE_STORAGE_KEY = 'xo5.selectedEngine3';
+  var currentEngineId = load(ENGINE_STORAGE_KEY, ENGINE_DEFAULT);
+
+  function getEngine(id) {
+    return ENGINE_REGISTRY[id] || null;
+  }
+
+  function getCurrentEngine() {
+    return getEngine(currentEngineId);
+  }
+
+  function getAvailableEngines() {
+    return Object.keys(ENGINE_REGISTRY).filter(function (id) {
+      return ENGINE_REGISTRY[id].status === 'available';
+    });
+  }
+
+  function isEngineAvailable(id) {
+    var eng = getEngine(id);
+    return eng && eng.status === 'available';
+  }
+
+  function setCurrentEngine(id) {
+    if (!ENGINE_REGISTRY[id]) {
+      console.warn('Unknown engine ID: ' + id);
+      return false;
+    }
+    if (ENGINE_REGISTRY[id].status !== 'available') {
+      console.warn('Engine not available: ' + id);
+      return false;
+    }
+    currentEngineId = id;
+    store(ENGINE_STORAGE_KEY, id);
+    return true;
+  }
+
+  function validateEngineSelection() {
+    if (!isEngineAvailable(currentEngineId)) {
+      var available = getAvailableEngines();
+      if (available.length > 0) {
+        currentEngineId = available[0];
+        store(ENGINE_STORAGE_KEY, currentEngineId);
+      } else {
+        currentEngineId = ENGINE_DEFAULT;
+      }
+    }
+    return currentEngineId;
+  }
+
+  /* Initialize engine selection on load */
+  validateEngineSelection();
+  setEngineBadge();
+
   var STATS = load('stats3', {
     played: 0, wins: 0, losses: 0, draws: 0, streak: 0, best: 0, moveTotal: 0,
     firstMoves: 0, centerFirst: 0, firstDistTotal: 0,
@@ -3387,9 +3718,21 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
   function setEngineBadge() {
     var b = $('engineBadge');
     if (!b) return;
-    var mode = (WK.mode === 'worker' && AW.mode === 'worker') ? 'worker (dual)' :
-               (WK.mode === 'worker' || AW.mode === 'worker') ? 'worker' : 'main thread';
-    b.textContent = mode;
+    var eng = getCurrentEngine();
+    var mode = 'main thread';
+    if (WK && AW) {
+      mode = (WK.mode === 'worker' && AW.mode === 'worker') ? 'worker (dual)' :
+             (WK.mode === 'worker' || AW.mode === 'worker') ? 'worker' : 'main thread';
+    }
+    
+    var logoPath = eng && eng.logo ? eng.logo : '';
+    
+    var html = '';
+    if (logoPath) {
+      html += '<img src="' + logoPath + '" alt="' + (eng ? eng.name : 'XO5 Forge V3') + ' logo" class="engine-badge-logo" onerror="this.style.display=\'none\'"> ';
+    }
+    html += (eng ? eng.name : 'XO5 Forge V3') + ' · ' + mode;
+    b.innerHTML = html;
   }
 
   function onPoolMessage(pool, e) {
@@ -3444,6 +3787,24 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
   function cancelAllSearches(reason) {
     cancelAI(reason);
     cancelAnalysis(reason);
+  }
+
+  function switchEngine(newEngineId) {
+    if (!setCurrentEngine(newEngineId)) {
+      toast('Cannot select ' + (ENGINE_REGISTRY[newEngineId] ? ENGINE_REGISTRY[newEngineId].name : newEngineId));
+      return false;
+    }
+    cancelAllSearches('engine-switch');
+    cacheClear();
+    current = null;
+    setEvalDisplay(null);
+    showEngineInfo(null);
+    setEngineBadge();
+    toast('Switched to ' + getCurrentEngine().name);
+    if (G && G.analysisMode) {
+      scheduleAnalysis(true);
+    }
+    return true;
   }
 
   function askPool(pool, payload, onProgress) {
@@ -6067,6 +6428,7 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
   function applySettings(rebuild) {
     document.documentElement.setAttribute('data-theme', S.theme);
     document.documentElement.style.setProperty('--board-size', S.boardSize + 'px');
+    setEngineBadge();
     $('frame').classList.toggle('no-coords', !S.coords);
     press('levelSeg', String(S.level)); press('sideSeg', S.side);
     press('clockSeg', String(S.clock)); press('timeSeg', String(S.timeMs));
@@ -6097,13 +6459,64 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
     el.disabled = !!disabled;
   }
 
-  $('settingsBtn').onclick = function () { SND.click(); openModal('settingsOverlay'); };
+  $('settingsBtn').onclick = function () { SND.click(); openModal('settingsOverlay'); renderEngineSelector(); };
   $('themeBtn').onclick = function () { S.theme = S.theme === 'light' ? 'dark' : 'light'; applySettings(); };
   $('setTabs').onclick = function (e) {
     var b = e.target.closest('button'); if (!b) return;
     [].forEach.call(this.querySelectorAll('button'), function (x) { x.setAttribute('aria-selected', String(x === b)); });
     [].forEach.call(document.querySelectorAll('.tabpanel'), function (p) { p.hidden = p.dataset.panel !== b.dataset.tab; });
   };
+
+  function renderEngineSelector() {
+    var grid = $('engineGrid');
+    if (!grid) return;
+    var html = '';
+    Object.keys(ENGINE_REGISTRY).forEach(function (id) {
+      var eng = ENGINE_REGISTRY[id];
+      var isAvailable = eng.status === 'available';
+      var isSelected = currentEngineId === id;
+      var statusClass = isAvailable ? 'engine-status-available' : 'engine-status-coming-soon';
+      var statusText = isAvailable ? '● Available' : '🔒 Coming Soon';
+      var cardClass = 'engine-card';
+      if (!isAvailable) cardClass += ' engine-card-disabled';
+      if (isSelected) cardClass += ' engine-card-selected';
+      
+      var logoPath = eng.logo || '';
+      
+      html += '<div class="' + cardClass + '" data-engine="' + id + '"' + 
+              (isAvailable ? '' : ' aria-disabled="true"') + '>';
+      if (logoPath) {
+        html += '<div class="engine-card-logo">';
+        html += '<img src="' + logoPath + '" alt="' + eng.name + ' logo" class="engine-logo-img" onerror="this.style.display=\'none\'">';
+        html += '</div>';
+      }
+      html += '<h3 class="engine-name">' + eng.name + '</h3>';
+      html += '<p class="engine-version">' + eng.version + '</p>';
+      html += '<p class="engine-desc">' + eng.description + '</p>';
+      html += '<div class="engine-status ' + statusClass + '">';
+      html += '<span class="engine-status-icon"></span>';
+      html += statusText;
+      html += '</div>';
+      html += '</div>';
+    });
+    grid.innerHTML = html;
+    
+    // Add click handlers only if grid has children
+    if (grid.children.length > 0) {
+      [].forEach.call(grid.querySelectorAll('.engine-card'), function (card) {
+        card.onclick = function () {
+          var id = this.dataset.engine;
+          if (!isEngineAvailable(id)) {
+            toast(ENGINE_REGISTRY[id].name + ' is coming soon.');
+            return;
+          }
+          if (switchEngine(id)) {
+            renderEngineSelector();
+          }
+        };
+      });
+    }
+  }
   $('levelSeg').onclick = function (e) {
     var b = e.target.closest('button'); if (!b) return;
     S.level = clamp(+b.dataset.v, 1, 9); applySettings();
@@ -6337,6 +6750,11 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
   applySettings();
   renderPuzzles();
   tickerStart();
+  
+  // Render engine selector after DOM is ready
+  setTimeout(function () {
+    renderEngineSelector();
+  }, 100);
 
   var initialMoves = null, initialRoute = 'home';
   try {
@@ -6367,6 +6785,22 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
     posKey: posKey, analysisTokenValue: function () { return analysisToken; },
     gradeOf: function (i) { return line()[i] && line()[i].quality; },
     isSearching: function () { return searching; },
+    ENGINE_REGISTRY: ENGINE_REGISTRY,
+    getCurrentEngine: getCurrentEngine,
+    getAvailableEngines: getAvailableEngines,
+    isEngineAvailable: isEngineAvailable,
+    setCurrentEngine: setCurrentEngine,
+    switchEngine: switchEngine,
+    validateEngineSelection: validateEngineSelection,
+    get currentEngineId() { return currentEngineId; },
+    set currentEngineId(v) { currentEngineId = v; },
+    setEngineBadge: setEngineBadge,
+    ENGINE_LOGO_MAP: {
+      'forge_v3': ENGINE_REGISTRY.forge_v3.logo,
+      'forge_v3_pro': ENGINE_REGISTRY.forge_v3_pro.logo,
+      'forge_v4': ENGINE_REGISTRY.forge_v4.logo,
+      'forge_v4_pro': ENGINE_REGISTRY.forge_v4_pro.logo
+    },
     PUZZLES: PUZZLES,
     /* ---- puzzle bank ---- */
     BUILTIN_PUZZLES: BUILTIN_PUZZLES, CONTRIBUTED_PUZZLES: CONTRIBUTED_PUZZLES,

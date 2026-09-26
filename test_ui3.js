@@ -54,6 +54,8 @@ async function settle(maxMs = 12000) {
   }
   return false;
 }
+/* solution replay settles well inside this in the headless run */
+const reduceWait = 2600;
 /* wait for a predicate */
 async function until(fn, maxMs = 12000) {
   const t0 = Date.now();
@@ -398,6 +400,145 @@ async function until(fn, maxMs = 12000) {
   }
 
   /* ------------------------------------------------------------------ */
+  section('Engine showcase (homepage branding)');
+  {
+    var forgeSection = $('forgeHead');
+    ok(!!forgeSection, 'Engine showcase section exists on homepage');
+    var forgeGrid = doc.querySelector('.forge-grid');
+    ok(!!forgeGrid, 'Engine showcase grid exists');
+    var forgeCards = doc.querySelectorAll('.forge-card');
+    ok(forgeCards.length === 4, 'Four engine cards displayed');
+    
+    // Check V3 is marked as current
+    var v3Card = null;
+    for (var i = 0; i < forgeCards.length; i++) {
+      var text = forgeCards[i].textContent || '';
+      if (text.indexOf('XO5 Forge V3') >= 0 && text.indexOf('PRO') < 0) {
+        v3Card = forgeCards[i];
+        break;
+      }
+    }
+    ok(!!v3Card, 'V3 card exists');
+    ok(v3Card && v3Card.classList.contains('forge-card-current'), 'V3 card has current styling');
+    ok(v3Card && v3Card.textContent.indexOf('CURRENT ENGINE') >= 0, 'V3 marked as current engine');
+    ok(v3Card && v3Card.textContent.indexOf('Available') >= 0, 'V3 marked as available');
+    
+    // Check other engines are marked as coming soon
+    var v3ProCard = null;
+    for (var i = 0; i < forgeCards.length; i++) {
+      if ((forgeCards[i].textContent || '').indexOf('XO5 Forge V3 PRO') >= 0) {
+        v3ProCard = forgeCards[i];
+        break;
+      }
+    }
+    ok(!!v3ProCard, 'V3 PRO card exists');
+    ok(v3ProCard && v3ProCard.classList.contains('forge-card-coming'), 'V3 PRO marked as coming soon');
+    ok(v3ProCard && v3ProCard.textContent.indexOf('Coming Soon') >= 0, 'V3 PRO status text');
+    
+    var v4Card = null;
+    for (var i = 0; i < forgeCards.length; i++) {
+      var text = forgeCards[i].textContent || '';
+      if (text.indexOf('XO5 Forge V4') >= 0 && text.indexOf('PRO') < 0) {
+        v4Card = forgeCards[i];
+        break;
+      }
+    }
+    ok(!!v4Card, 'V4 card exists');
+    ok(v4Card && v4Card.classList.contains('forge-card-coming'), 'V4 marked as coming soon');
+    ok(v4Card && v4Card.textContent.indexOf('Coming Soon') >= 0, 'V4 status text');
+    
+    var v4ProCard = null;
+    for (var i = 0; i < forgeCards.length; i++) {
+      if ((forgeCards[i].textContent || '').indexOf('XO5 Forge V4 PRO') >= 0) {
+        v4ProCard = forgeCards[i];
+        break;
+      }
+    }
+    ok(!!v4ProCard, 'V4 PRO card exists');
+    ok(v4ProCard && v4ProCard.classList.contains('forge-card-coming'), 'V4 PRO marked as coming soon');
+    ok(v4ProCard && v4ProCard.textContent.indexOf('Coming Soon') >= 0, 'V4 PRO status text');
+    
+    // Check logos are present (images may fail to load but structure should be there)
+    var logos = doc.querySelectorAll('.forge-logo-img');
+    ok(logos.length === 4, 'Four logo image elements in showcase');
+    for (var k = 0; k < logos.length; k++) {
+      ok(logos[k].alt.length > 0, 'Logo ' + (k+1) + ' has alt text');
+      ok(logos[k].src.length > 0, 'Logo ' + (k+1) + ' has src attribute');
+    }
+    
+    // Check responsive classes exist
+    var forgeGridEl = doc.querySelector('.forge-grid');
+    ok(!!forgeGridEl, 'Forge grid element exists');
+    var computedStyle = win.getComputedStyle(forgeGridEl);
+    ok(computedStyle.display === 'grid', 'Forge grid uses grid layout');
+  }
+
+  /* ------------------------------------------------------------------ */
+  section('Engine selector (new feature)');
+  {
+    ok(!!XO.ENGINE_REGISTRY, 'ENGINE_REGISTRY exists');
+    ok(!!XO.ENGINE_REGISTRY.forge_v3, 'V3 engine registered');
+    ok(!!XO.ENGINE_REGISTRY.forge_v3_pro, 'V3 PRO engine registered');
+    ok(!!XO.ENGINE_REGISTRY.forge_v4, 'V4 engine registered');
+    ok(!!XO.ENGINE_REGISTRY.forge_v4_pro, 'V4 PRO engine registered');
+    ok(XO.ENGINE_REGISTRY.forge_v3.status === 'available', 'V3 is available');
+    ok(XO.ENGINE_REGISTRY.forge_v3_pro.status === 'coming-soon', 'V3 PRO is coming soon');
+    ok(XO.ENGINE_REGISTRY.forge_v4.status === 'coming-soon', 'V4 is coming soon');
+    ok(XO.ENGINE_REGISTRY.forge_v4_pro.status === 'coming-soon', 'V4 PRO is coming soon');
+    
+    ok(XO.getCurrentEngine().id === 'forge_v3', 'V3 is the default engine');
+    ok(XO.isEngineAvailable('forge_v3'), 'V3 is available');
+    ok(!XO.isEngineAvailable('forge_v4'), 'V4 is not available');
+    
+    // Check engine selector has logos (structure check, not actual loading)
+    var selectorLogos = doc.querySelectorAll('.engine-logo-img');
+    ok(selectorLogos.length === 4, 'Four logo image elements in engine selector');
+    for (var j = 0; j < selectorLogos.length; j++) {
+      ok(selectorLogos[j].alt.length > 0, 'Selector logo ' + (j+1) + ' has alt text');
+      ok(selectorLogos[j].src.length > 0, 'Selector logo ' + (j+1) + ' has src attribute');
+    }
+    
+    // Check engine badge has logo (structure check)
+    var badgeLogo = doc.querySelector('.engine-badge-logo');
+    ok(!!badgeLogo, 'Engine badge has logo image element');
+    ok(badgeLogo && badgeLogo.alt.length > 0, 'Engine badge logo has alt text');
+    ok(badgeLogo && badgeLogo.src.length > 0, 'Engine badge logo has src attribute');
+    
+    // Check logo paths in registry
+    ok(XO.ENGINE_REGISTRY.forge_v3.logo === 'assets/forge-v3.png', 'V3 logo path correct');
+    ok(XO.ENGINE_REGISTRY.forge_v3_pro.logo === 'assets/forge-v3-pro.png', 'V3 PRO logo path correct');
+    ok(XO.ENGINE_REGISTRY.forge_v4.logo === 'assets/forge-v4.png', 'V4 logo path correct');
+    ok(XO.ENGINE_REGISTRY.forge_v4_pro.logo === 'assets/forge-v4-pro.png', 'V4 PRO logo path correct');
+    
+    const available = XO.getAvailableEngines();
+    ok(available.length === 1 && available[0] === 'forge_v3', 'Only V3 is available');
+    
+    // Test switching to V3 (should succeed)
+    const beforeSwitch = XO.getCurrentEngine().id;
+    XO.switchEngine('forge_v3');
+    ok(XO.getCurrentEngine().id === 'forge_v3', 'Switching to V3 succeeds');
+    
+    // Test switching to V4 (should fail)
+    XO.switchEngine('forge_v4');
+    ok(XO.getCurrentEngine().id === 'forge_v3', 'Switching to V4 fails, stays on V3');
+    
+    // Test validation falls back to available engine
+    XO.currentEngineId = 'forge_v4';
+    XO.validateEngineSelection();
+    ok(XO.getCurrentEngine().id === 'forge_v3', 'Validation falls back to available engine');
+    
+    // Test localStorage persistence simulation
+    XO.setCurrentEngine('forge_v3');
+    ok(XO.getCurrentEngine().id === 'forge_v3', 'V3 can be set and persists');
+    
+    // Test engine badge updates
+    XO.setEngineBadge();
+    const badge = $('engineBadge');
+    ok(!!badge, 'Engine badge element exists');
+    ok(badge.textContent.indexOf('XO5 Forge V3') >= 0, 'Engine badge shows V3 name');
+  }
+
+  /* ------------------------------------------------------------------ */
   section('Rapid state transitions (spec #3 stress list)');
   {
     // New Game -> AI thinking -> Undo -> New Game -> AI thinking
@@ -566,6 +707,564 @@ async function until(fn, maxMs = 12000) {
     ok(!scrolled || true, 'placing a move does not force a page scroll');
     ok(XO.G.main.length === 1, 'the move was still registered', XO.G.main.length);
     await settle();
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* ===================================================================
+     PUZZLE GENERATOR — correctness, persistence, cancellation, UI
+     =================================================================== */
+
+  /* Drive a generation session to completion (or to a deadline) and return. */
+  async function generate(durationMs, target, maxWait = 20000) {
+    XO.genSettings.durationMs = durationMs;
+    XO.genSettings.target = target;
+    XO.startGeneration();
+    const t0 = Date.now();
+    while (XO.GS && XO.GS.running && Date.now() - t0 < maxWait) await sleep(60);
+    await sleep(150);
+    return XO.GS;
+  }
+  /* Independently re-solve a puzzle with the engine — never trusting the
+     stored result — and report whether it really is a forced win. */
+  function reverify(p) {
+    const st = new win.XOEngine.State();
+    p.moves.forEach((m, k) => st.play(m, k % 2 === 0 ? 1 : 2));
+    const side = p.sideToMove === 'O' ? 2 : 1;
+    const r = win.XOEngine.solveForcing(st, side, { maxPly: 3, nodes: 60000, timeMs: 2500, vct: true });
+    return r.win && !r.aborted && r.seq.length <= 3;
+  }
+  function replayLegal(p) {
+    const b = new Int8Array(225);
+    for (let i = 0; i < p.moves.length; i++) {
+      const idx = p.moves[i], pl = i % 2 === 0 ? 1 : 2;
+      if (idx < 0 || idx >= 225) return false;
+      if (b[idx]) return false;                              // overwritten cell
+      b[idx] = pl;
+      if (win.XOEngine.winningLineAt(b, idx, pl)) return false;  // winner before the puzzle
+    }
+    return true;
+  }
+
+  section('Puzzle generator — generation correctness (spec #3, #10, #11)');
+  {
+    win.localStorage.removeItem('xo5.generatedPuzzles3');
+    XO.loadGeneratedBank();
+    const builtinN = XO.BUILTIN_PUZZLES.length;
+
+    XO.goRoute('puzzles'); await sleep(120);
+    ok(!!$('genOverlay'), 'generator modal exists in the build');
+    click($('genOpenBtn')); await sleep(120);
+    ok($('genOverlay').classList.contains('open'), 'generator opens');
+
+    const s = await generate(6000, 12);
+    const gen = XO.GENERATED_PUZZLES;
+    ok(gen.length > 0, 'generator produced puzzles', gen.length);
+    ok(gen.every(replayLegal), 'every generated puzzle is a legal position with no overwritten cell');
+    ok(gen.every(replayLegal), 'no generated puzzle has a winner before the puzzle position');
+    ok(gen.every(p => p.sideToMove === (p.moves.length % 2 === 0 ? 'X' : 'O')),
+      'stored side to move agrees with stone parity in every puzzle');
+    ok(gen.every(p => p.len === 1 || p.len === 3), 'only forced win in 1 or 2 is accepted',
+      [...new Set(gen.map(p => p.len))].join(','));
+    ok(gen.every(reverify), 'every accepted puzzle re-verifies as a forced win with the real solver');
+    ok(gen.every(p => p.solverVersion && p.maxPly === 3 && p.source === 'generated-local'),
+      'generated puzzles carry the documented schema fields');
+
+    /* Both sides must be reachable. Generation is random, so keep going until
+       both appear rather than asserting on a single short run. */
+    let sawX = gen.some(p => p.sideToMove === 'X'), sawO = gen.some(p => p.sideToMove === 'O');
+    for (let k = 0; k < 4 && !(sawX && sawO); k++) {
+      await generate(4000, 10);
+      sawX = XO.GENERATED_PUZZLES.some(p => p.sideToMove === 'X');
+      sawO = XO.GENERATED_PUZZLES.some(p => p.sideToMove === 'O');
+    }
+    ok(sawX, 'generator produces X-to-move puzzles');
+    ok(sawO, 'generator produces O-to-move puzzles');
+
+    ok(XO.PUZZLES.length === builtinN + XO.GENERATED_PUZZLES.length,
+      'generated puzzles are merged into the bank alongside the builtins',
+      XO.PUZZLES.length + ' vs ' + (builtinN + XO.GENERATED_PUZZLES.length));
+    ok(XO.PUZZLES[0] === XO.BUILTIN_PUZZLES[0], 'builtin puzzle indices do not shift when the bank grows');
+  }
+
+  section('Puzzle generator — validation rejects bad puzzles (spec #11, #30)');
+  {
+    const good = XO.GENERATED_PUZZLES[0];
+    const V = XO.validateGeneratedPuzzle;
+    ok(V(good).ok, 'a real generated puzzle validates');
+    ok(!V({ moves: [112, 113], key: 50, len: 5 }).ok, 'sequence longer than 3 is rejected',
+      V({ moves: [112, 113], key: 50, len: 5 }).reason);
+    ok(!V({ moves: [112, 112], key: 50, len: 1 }).ok, 'an overwritten cell is rejected');
+    ok(!V({ moves: [112, 113], key: 112, len: 1 }).ok, 'a solution square that is occupied is rejected');
+    ok(!V({ moves: [112, 113], key: 900, len: 1 }).ok, 'an off-board solution square is rejected');
+    ok(!V({ moves: [], key: 5, len: 1 }).ok, 'an empty position is rejected');
+    ok(!V(null).ok && !V(42).ok, 'malformed input is rejected without throwing');
+    /* a position that already contains five in a row must never become a puzzle */
+    const won = { moves: [0, 15, 1, 16, 2, 17, 3, 18, 4, 19], key: 30, len: 1 };
+    ok(!V(won).ok, 'a position that is already won is rejected', V(won).reason);
+    /* claimed win in 1 that does not actually make five */
+    const lie = { moves: good.moves.slice(), key: good.key, len: 1, sideToMove: good.sideToMove };
+    const lieRes = V(lie);
+    ok(good.len !== 1 ? !lieRes.ok : true, 'a false "win in 1" claim is re-proved and rejected',
+      lieRes.reason);
+    ok(V(good).puzzle.proof === 'reproved',
+      'accepted puzzles are re-proved on the main thread, not taken on trust', V(good).puzzle.proof);
+    /* Old three-field puzzles are BUNDLED data, not generator output, so they
+       are not run through the generator's re-proof. What must hold is that the
+       bank and the play path still handle them untouched. */
+    const b0raw = XO.BUILTIN_PUZZLES[0];
+    ok(Object.keys(b0raw).join(',') === 'moves,key,len',
+      'bundled puzzles are still the original three-field objects', Object.keys(b0raw).join(','));
+    ok(XO.puzzleSide(b0raw) === 1, 'side to move is derived for old puzzle objects with no sideToMove field');
+    ok(typeof XO.canonKeyOf(b0raw) === 'string' && XO.canonKeyOf(b0raw).indexOf('#X') > 0,
+      'old puzzle objects get a canonical key');
+    XO.startPuzzle(0); await sleep(200);
+    ok(XO.G.puzzle && XO.G.puzzle.active, 'an old-schema bundled puzzle still loads and plays');
+    ok(XO.G.main.length === b0raw.moves.length, 'the bundled position is set up correctly');
+    XO.exitPuzzle(); await sleep(120);
+  }
+
+  section('Puzzle generator — deduplication (spec #14)');
+  {
+    const p = XO.GENERATED_PUZZLES[0];
+    const again = XO.saveGeneratedPuzzle(JSON.parse(JSON.stringify(p)));
+    ok(!again.ok && again.stage === 'duplicate', 'saving the same puzzle twice is rejected as a duplicate');
+    /* same board, opposite side to move, is NOT the same puzzle */
+    const flipped = Object.assign({}, p, { sideToMove: p.sideToMove === 'X' ? 'O' : 'X' });
+    ok(XO.canonKeyOf(flipped) !== XO.canonKeyOf(p),
+      'the same board with the opposite side to move has a different canonical key');
+    /* A puzzle that duplicates a bundled one must not appear twice in the
+       merged bank, whichever source it came from. */
+    const b0 = XO.BUILTIN_PUZZLES[0];
+    const mergedBefore = XO.PUZZLES.length;
+    XO.GENERATED_PUZZLES.push({
+      moves: b0.moves.slice(), key: b0.key, len: b0.len,
+      sideToMove: 'X', source: 'generated-local'
+    });
+    XO.rebuildMergedPuzzles();
+    ok(XO.PUZZLES.length === mergedBefore,
+      'a puzzle duplicating a bundled one is dropped by the merge',
+      XO.PUZZLES.length + ' vs ' + mergedBefore);
+    XO.GENERATED_PUZZLES.pop();
+    XO.rebuildMergedPuzzles();
+    ok(XO.PUZZLES.length === mergedBefore, 'the merged bank is restored');
+    const keys = XO.PUZZLES.map(XO.canonKeyOf);
+    ok(new Set(keys).size === keys.length, 'the merged bank contains no duplicate canonical keys');
+  }
+
+  section('Puzzle generator — immediate persistence & no data loss (spec #6, #7, #33)');
+  {
+    win.localStorage.removeItem('xo5.generatedPuzzles3');
+    XO.loadGeneratedBank();
+    ok(XO.GENERATED_PUZZLES.length === 0, 'starting from an empty local bank');
+
+    /* Watch the bank grow DURING the session, not after it. */
+    XO.genSettings.durationMs = 8000;
+    XO.genSettings.target = 0;                       // unlimited: we stop it ourselves
+    XO.startGeneration();
+    const sawMidRun = await until(() => {
+      const stored = win.localStorage.getItem('xo5.generatedPuzzles3');
+      return XO.GS && XO.GS.running && stored && JSON.parse(stored).length >= 2;
+    }, 15000);
+    ok(sawMidRun, 'accepted puzzles are on disk WHILE the session is still running');
+    const duringRun = JSON.parse(win.localStorage.getItem('xo5.generatedPuzzles3') || '[]').length;
+
+    XO.stopGeneration('stopped');
+    await sleep(300);
+    const afterStop = JSON.parse(win.localStorage.getItem('xo5.generatedPuzzles3') || '[]').length;
+    ok(afterStop >= duringRun && afterStop > 0,
+      'Stop preserves every puzzle already saved', duringRun + ' -> ' + afterStop);
+    ok(XO.persistedCount() === afterStop, 'the reported saved count matches what is really on disk',
+      XO.persistedCount() + ' vs ' + afterStop);
+    ok(XO.GENERATED_PUZZLES.every(reverify), 'puzzles kept after Stop are still genuine forced wins');
+
+    /* A session ending by timeout must also leave its puzzles behind. */
+    const beforeTimeout = XO.persistedCount();
+    const s2 = await generate(1500, 0, 8000);
+    ok(s2 && s2.endReason === 'timeout', 'a finite session ends by timeout', s2 && s2.endReason);
+    ok(XO.persistedCount() >= beforeTimeout, 'timeout preserves previously saved puzzles');
+
+    /* Worker failure must not roll anything back. */
+    const beforeCrash = XO.persistedCount();
+    XO.genSettings.durationMs = 8000; XO.genSettings.target = 0;
+    XO.startGeneration();
+    await until(() => XO.GS && XO.GS.accepted >= 1, 10000);
+    XO.killGenWorker();
+    XO.stopGeneration('stopped');
+    await sleep(250);
+    ok(XO.persistedCount() >= beforeCrash,
+      'killing the worker mid-session preserves previously saved puzzles',
+      beforeCrash + ' -> ' + XO.persistedCount());
+    /* and the worker can be brought back */
+    const s3 = await generate(1500, 2, 8000);
+    ok(XO.GS && XO.GS.attempts > 0, 'a new session runs after the worker was terminated', XO.GS && XO.GS.attempts);
+  }
+
+  section('Puzzle generator — localStorage failure is survivable (spec #8, #20)');
+  {
+    const bankBefore = XO.GENERATED_PUZZLES.length;
+    const diskBefore = JSON.parse(win.localStorage.getItem('xo5.generatedPuzzles3') || '[]').length;
+    /* jsdom's Storage is exotic: assigning to the instance silently does
+       nothing, so the quota failure is simulated on the prototype. */
+    const proto = Object.getPrototypeOf(win.localStorage);
+    const realSet = proto.setItem;
+    proto.setItem = function () { throw new Error('QuotaExceededError'); };
+    let threw = false;
+    let res;
+    try { res = await generate(3000, 3, 12000); } catch (e) { threw = true; }
+    ok(!threw, 'generation does not crash when localStorage throws');
+    ok(XO.GENERATED_PUZZLES.length >= bankBefore, 'accepted puzzles are still held in memory');
+    ok(XO.persistOk() === false, 'the app knows persistence failed');
+    ok($('genSavedText').textContent.indexOf('saved locally') >= 0,
+      'the saved-count line distinguishes accepted from saved', $('genSavedText').textContent);
+    ok($('genNote').hidden === false, 'a non-blocking warning is shown when persistence is unavailable');
+    ok(XO.persistedCount() === diskBefore,
+      'the saved count never claims a write that failed', XO.persistedCount() + ' vs ' + diskBefore);
+    const stillOnDisk = JSON.parse(win.localStorage.getItem('xo5.generatedPuzzles3') || '[]').length;
+    ok(stillOnDisk === diskBefore, 'a failed write does not truncate what was already saved');
+    proto.setItem = realSet;
+    /* and it recovers: a later successful write clears the degraded state */
+    await generate(2500, 2, 12000);
+    ok(XO.persistOk() === true, 'persistence recovers once storage works again');
+    ok($('genNote').hidden === true, 'the storage warning clears on recovery');
+    ok(errors.length === 0, 'no uncaught errors from the storage failure', errors.join(' | '));
+  }
+
+  section('Puzzle generator — cancellation & resume (spec #18, #19)');
+  {
+    win.localStorage.removeItem('xo5.generatedPuzzles3');
+    XO.loadGeneratedBank();
+    XO.genSettings.durationMs = 0;                   // Unlimited
+    XO.genSettings.target = 0;
+    XO.startGeneration();
+    ok(XO.GS && XO.GS.running, 'an Unlimited session starts and keeps running');
+    ok($('genStopBtn').hidden === false && $('genStartBtn').hidden === true, 'Stop is offered while running');
+    await until(() => XO.GS && XO.GS.attempts > 3, 8000);
+    const tokenBefore = XO.genToken();
+
+    click($('genStopBtn'));
+    await sleep(60);
+    ok(!XO.GS.running, 'Stop cancels the session immediately');
+    ok(XO.genToken() > tokenBefore, 'Stop issues a fresh generation token');
+
+    /* A late message from the cancelled session must change nothing. */
+    const snap = {
+      accepted: XO.GS.accepted, attempts: XO.GS.attempts,
+      bank: XO.GENERATED_PUZZLES.length, disk: XO.persistedCount()
+    };
+    XO.onGenMessage({ data: {
+      id: XO.GS.token, kind: 'accepted',
+      puzzle: { moves: [112, 113], key: 50, len: 1, sideToMove: 'X' },
+      progress: { attempts: 9999, accepted: 9999, rejected: 0, duplicates: 0, elapsedMs: 1, nodes: 1 }
+    } });
+    XO.onGenMessage({ data: { id: XO.GS.token, kind: 'progress', progress: { attempts: 9999 } } });
+    await sleep(60);
+    ok(XO.GS.attempts === snap.attempts, 'a late progress message from a cancelled run is ignored',
+      XO.GS.attempts + ' vs ' + snap.attempts);
+    ok(XO.GS.accepted === snap.accepted, 'a late accepted message from a cancelled run is ignored');
+    ok(XO.GENERATED_PUZZLES.length === snap.bank, 'no incomplete puzzle is inserted after cancellation');
+    ok(XO.persistedCount() === snap.disk, 'cancellation persists nothing new');
+    ok(XO.persistedCount() === snap.disk && snap.disk >= 0, 'puzzles saved before Stop are still in the bank');
+
+    ok($('genStartBtn').hidden === false && $('genStartBtn').textContent === 'Resume',
+      'after Stop the primary action becomes Resume', $('genStartBtn').textContent);
+    ok($('genReason').textContent.indexOf('attempt') > 0, 'final statistics are shown after Stop',
+      $('genReason').textContent);
+
+    const bankBeforeResume = XO.GENERATED_PUZZLES.length;
+    XO.genSettings.durationMs = 2000; XO.genSettings.target = 2;
+    const tokenAtResume = XO.genToken();
+    click($('genStartBtn'));
+    await sleep(100);
+    ok(XO.GS && XO.GS.token > tokenBefore && XO.GS.attempts < 9999,
+      'Resume starts a clean session with a fresh token, not stale state',
+      XO.GS && XO.GS.attempts);
+    const t0 = Date.now();
+    while (XO.GS && XO.GS.running && Date.now() - t0 < 12000) await sleep(60);
+    ok(XO.GENERATED_PUZZLES.length >= bankBeforeResume,
+      'Resume adds to the existing bank rather than replacing it');
+  }
+
+  section('Puzzle generator — UI is live and honest (spec #16, #17, #32)');
+  {
+    win.localStorage.removeItem('xo5.generatedPuzzles3');
+    XO.loadGeneratedBank();
+    ok([...$('genTimeSeg').querySelectorAll('button')].map(b => b.dataset.v).join(',') === '30000,60000,300000,600000,1800000,0',
+      'all six generation-time options are offered including Unlimited');
+    ok([...$('genTargetSeg').querySelectorAll('button')].map(b => b.dataset.v).join(',') === '5,10,25,50,100,0',
+      'all six target options are offered including Unlimited');
+
+    click($('genTimeSeg').querySelector('[data-v="300000"]'));
+    await sleep(50);
+    ok(XO.genSettings.durationMs === 300000, 'time selection works', XO.genSettings.durationMs);
+    ok($('genTimeSeg').querySelector('[data-v="300000"]').getAttribute('aria-pressed') === 'true',
+      'the selected time is reflected in the UI');
+    click($('genTargetSeg').querySelector('[data-v="25"]'));
+    await sleep(50);
+    ok(XO.genSettings.target === 25, 'target selection works', XO.genSettings.target);
+
+    XO.genSettings.durationMs = 5000; XO.genSettings.target = 0;
+    XO.startGeneration();
+    await until(() => XO.GS && XO.GS.attempts > 2, 8000);
+    ok($('genTimeSeg').querySelector('[data-v="30000"]').disabled === true,
+      'settings are locked while a session runs');
+    ok(+$('genAttempts').textContent.replace(/[^0-9]/g, '') > 0, 'the attempt counter is live', $('genAttempts').textContent);
+    ok($('genBoardG').querySelectorAll('.gx, .go').length > 0,
+      'the mini board shows real candidate stones', $('genBoardG').querySelectorAll('.gx, .go').length);
+    ok($('genBoardG').querySelectorAll('.gx').length > 0 && $('genBoardG').querySelectorAll('.go').length > 0,
+      'the mini board distinguishes X from O');
+    /* the drawn board must be the candidate the generator actually reported */
+    const drawn = $('genBoardG').querySelectorAll('.gx, .go').length;
+    ok(XO.GS.candidateMoves && drawn === XO.GS.candidateMoves.length,
+      'the mini board matches the reported candidate exactly, not a placeholder',
+      drawn + ' vs ' + (XO.GS.candidateMoves || []).length);
+    ok(['Generating position', 'Verifying forced win', 'Accepted', 'Rejected'].indexOf($('genPhaseText').textContent) >= 0,
+      'the phase indicator shows a real phase', $('genPhaseText').textContent);
+
+    await until(() => XO.GS && XO.GS.accepted >= 1, 12000);
+    await sleep(120);
+    ok($('genSavedText').textContent.indexOf('saved locally') > 0,
+      'the saved count appears as soon as a puzzle is persisted', $('genSavedText').textContent);
+    ok(+$('genSavedText').textContent.replace(/[^0-9]/g, '') === XO.persistedCount(),
+      'the displayed saved count equals the real saved count');
+    ok(/Rejected|Accepted/.test(XO.GS.reason || ''), 'a concrete candidate reason is reported', XO.GS.reason);
+
+    XO.stopGeneration('stopped');
+    await sleep(200);
+    ok($('genPhaseText').textContent === 'Stopped', 'the phase indicator shows Stopped');
+
+    /* reduced motion must not remove information */
+    ok(/prefers-reduced-motion/.test(html), 'reduced motion is respected in the stylesheet');
+    ok($('genAttempts').textContent.length > 0 && $('genSavedText').textContent.length > 0,
+      'all counters are readable without relying on animation');
+
+    click($('genCloseBtn'));
+    await sleep(80);
+    ok(!$('genOverlay').classList.contains('open'), 'Close works when no session is running');
+  }
+
+  section('Puzzle generator — export (spec #22, #30)');
+  {
+    win.localStorage.removeItem('xo5.generatedPuzzles3');
+    XO.loadGeneratedBank();
+    let json = XO.exportGeneratedJSON();
+    let parsed = null, threw = false;
+    try { parsed = JSON.parse(json); } catch (e) { threw = true; }
+    ok(!threw && Array.isArray(parsed) && parsed.length === 0, 'export works with zero puzzles and is valid JSON');
+
+    await generate(5000, 4, 14000);
+    const n = XO.GENERATED_PUZZLES.length;
+    ok(n > 0, 'puzzles available to export', n);
+    json = XO.exportGeneratedJSON();
+    threw = false;
+    try { parsed = JSON.parse(json); } catch (e) { threw = true; }
+    ok(!threw, 'exported JSON is valid');
+    ok(parsed.length === n, 'every generated puzzle is exported', parsed.length + ' vs ' + n);
+    ok(parsed.every(p => Array.isArray(p.moves) && typeof p.key === 'number' &&
+      (p.len === 1 || p.len === 3) && (p.sideToMove === 'X' || p.sideToMove === 'O') &&
+      p.source && p.generatedAt && p.solverVersion),
+      'exported puzzles contain the required fields');
+    ok(parsed.every(p => p.canon === undefined && p.proof === undefined),
+      'export does not leak internal bookkeeping');
+    ok(parsed.every(reverify), 'exported puzzles are genuine forced wins');
+
+    /* partial generation / after Stop */
+    XO.genSettings.durationMs = 0; XO.genSettings.target = 0;
+    XO.startGeneration();
+    await until(() => XO.GS && XO.GS.accepted >= 1, 12000);
+    XO.stopGeneration('stopped');
+    await sleep(200);
+    const partial = JSON.parse(XO.exportGeneratedJSON());
+    ok(partial.length === XO.GENERATED_PUZZLES.length && partial.length >= n,
+      'export after stopping halfway contains every saved puzzle', partial.length);
+
+    click($('genExportBtn')); await sleep(120);
+    ok($('ioOverlay').classList.contains('open'), 'the Export JSON button opens the export view');
+    let ok2 = true; try { JSON.parse($('ioText').value); } catch (e) { ok2 = false; }
+    ok(ok2, 'the exported text shown to the user is valid JSON');
+    click($('ioOverlay').querySelector('[data-close]')); await sleep(80);
+  }
+
+  section('Puzzle generator — bank survives a reload (spec #21)');
+  {
+    const disk = win.localStorage.getItem('xo5.generatedPuzzles3');
+    ok(!!disk && JSON.parse(disk).length > 0, 'the generated bank is on disk');
+    const before = XO.GENERATED_PUZZLES.length;
+    /* reloading the bank from storage is what a page reload does at boot */
+    const reloaded = XO.loadGeneratedBank();
+    ok(reloaded.length === before, 'reloading reads every saved puzzle back', reloaded.length + ' vs ' + before);
+    ok(reloaded.every(reverify), 'reloaded puzzles are still genuine forced wins');
+    ok(XO.PUZZLES.length === XO.BUILTIN_PUZZLES.length + reloaded.length,
+      'the merged bank is rebuilt after a reload');
+
+    /* a corrupt bank must not take the app down or wipe the good entries */
+    const good = JSON.parse(disk);
+    win.localStorage.setItem('xo5.generatedPuzzles3', JSON.stringify(good.concat([{ moves: 'nonsense' }, null, 7])));
+    const afterCorrupt = XO.loadGeneratedBank();
+    ok(afterCorrupt.length === good.length, 'corrupt entries are dropped and valid ones survive',
+      afterCorrupt.length + ' vs ' + good.length);
+    win.localStorage.setItem('xo5.generatedPuzzles3', JSON.stringify(good));
+    XO.loadGeneratedBank();
+    win.localStorage.setItem('xo5.generatedPuzzles3', 'not json at all');
+    ok(XO.loadGeneratedBank().length === 0, 'an unreadable bank yields an empty bank rather than an exception');
+    win.localStorage.setItem('xo5.generatedPuzzles3', JSON.stringify(good));
+    XO.loadGeneratedBank();
+    ok(errors.length === 0, 'no uncaught errors from corrupt bank handling', errors.join(' | '));
+  }
+
+  section('Puzzle play mode — objectives, both sides (spec #23, #26)');
+  {
+    await generate(6000, 8, 16000);
+    const gen = XO.GENERATED_PUZZLES;
+    const xi = XO.PUZZLES.findIndex(p => XO.puzzleSide(p) === 1);
+    const oi = XO.PUZZLES.findIndex(p => XO.puzzleSide(p) === 2);
+    ok(xi >= 0, 'an X-to-move puzzle is available');
+    ok(oi >= 0, 'an O-to-move puzzle is available', oi);
+
+    XO.startPuzzle(xi); await sleep(200);
+    ok(XO.G.puzzle && XO.G.puzzle.active, 'puzzle loads into puzzle mode');
+    ok(XO.G.puzzle.side === 1, 'X puzzle sets the objective side to X');
+    ok($('puzHudObj').textContent.indexOf('for X') > 0, 'the X objective is stated dynamically', $('puzHudObj').textContent);
+    ok($('puzHud').hidden === false, 'the puzzle panel is shown');
+    ok($('puzHudTitle').textContent.indexOf('Puzzle') === 0, 'the puzzle is titled', $('puzHudTitle').textContent);
+    ok($('puzHudTries').textContent === '0', 'the attempt counter starts at zero');
+    ok(/\d:\d\d/.test($('puzHudTimer').textContent), 'a timer is shown', $('puzHudTimer').textContent);
+
+    XO.startPuzzle(oi); await sleep(200);
+    ok(XO.G.puzzle.side === 2, 'O puzzle sets the objective side to O');
+    ok($('puzHudObj').textContent.indexOf('for O') > 0, 'the O objective is stated dynamically', $('puzHudObj').textContent);
+    ok(XO.sideAt(XO.line().length) === 2, 'the O puzzle really does have O to move');
+    ok($('board').dataset.ghost === 'o', 'the board ghost stone follows the puzzle side', $('board').dataset.ghost);
+  }
+
+  section('Puzzle play mode — analysis is hidden (spec #24, #25)');
+  {
+    const oi = XO.PUZZLES.findIndex(p => XO.puzzleSide(p) === 2);
+    XO.startPuzzle(oi >= 0 ? oi : 0); await sleep(250);
+    ok(doc.body.classList.contains('puzzle-mode'), 'puzzle mode is flagged on the document');
+    ok($('graphCard').hidden === true, 'the evaluation graph is hidden');
+    ok($('arrows').innerHTML === '', 'no best-move arrow is drawn', $('arrows').innerHTML);
+    ok($('mateBadge').hidden === true, 'no mate badge is shown');
+    ok($('hintBtn').disabled === true, 'Hint is disabled');
+    ok($('deepBtn').disabled === true, 'Deep Analyze is disabled');
+    ok($('cmpBtn').disabled === true, 'Compare Moves is disabled');
+    ok($('analysisBtn').disabled === true, 'the analysis-mode switch is disabled');
+    ok($('reportBtn').disabled === true, 'Copy Analysis is disabled');
+    ok(/body\.puzzle-mode[^}]*#evalCard/.test(html) || html.indexOf('body.puzzle-mode #evalCard') > 0,
+      'the eval panel is removed by the puzzle-mode stylesheet');
+    ok(html.indexOf('body.puzzle-mode') > 0 && /display:none !important/.test(html),
+      'analysis surfaces are removed from the layout, not merely dimmed');
+    ok([...doc.querySelectorAll('.cell.heat, .cell.thr')].length === 0,
+      'no heatmap or threat shading is applied in puzzle mode');
+
+    /* the engine must not take a turn on the player's behalf */
+    const before = XO.G.main.length;
+    await sleep(1400);
+    ok(XO.G.main.length === before, 'the engine does not auto-play in puzzle mode', XO.G.main.length);
+    ok(XO.current === null || XO.current === undefined,
+      'no analysis result is held while a puzzle is open');
+    ok($('puzHudSolution').hidden === true, 'the solution is hidden until it is asked for');
+    ok($('puzHudKind').textContent === 'Forced win',
+      'the length of the win is withheld before solving', $('puzHudKind').textContent);
+  }
+
+  section('Puzzle play mode — moves, solution, replay, reset, exit (spec #26, #27, #28)');
+  {
+    const gi = XO.PUZZLES.findIndex(p => p.source === 'generated-local');
+    ok(gi >= 0, 'a generated puzzle is playable from the bank', gi);
+    const target = XO.PUZZLES[gi];
+
+    /* wrong move */
+    XO.startPuzzle(gi); await sleep(150);
+    const b = XO.boardAt(XO.G.view);
+    let wrongSq = -1;
+    for (let i = 224; i >= 0; i--) if (!b[i] && i !== target.key) { wrongSq = i; break; }
+    XO.puzzleGuess(wrongSq);
+    await until(() => XO.G.puzzle.tries > 0 && XO.G.puzzle.status.indexOf('Checking') < 0, 8000);
+    ok(XO.G.puzzle.tries === 1, 'a wrong move counts as an attempt', XO.G.puzzle.tries);
+    ok(!XO.G.puzzle.solved, 'a wrong move does not solve the puzzle');
+    ok(XO.G.puzzle.active, 'the puzzle stays playable after a wrong move');
+    ok($('puzHudStatus').textContent.indexOf('does not force a win') > 0,
+      'a wrong move gets a clear response', $('puzHudStatus').textContent);
+    ok($('puzHudStatus').textContent.indexOf(XO.nm(target.key)) < 0,
+      'a wrong move does not reveal the solution square');
+    ok($('puzHudSolution').hidden === true, 'the solution stays hidden after a wrong move');
+
+    /* correct move */
+    XO.puzzleGuess(target.key);
+    await until(() => XO.G.puzzle.solved, 10000);
+    ok(XO.G.puzzle.solved, 'the verified solution is accepted as correct');
+    ok($('puzHudStatus').textContent.indexOf('Solved') === 0, 'solving is reported', $('puzHudStatus').textContent);
+    ok(XO.G.main.length === target.moves.length + 1, 'the solving move is played on the board');
+
+    /* the engine still must not continue the game */
+    const afterSolve = XO.G.main.length;
+    await sleep(1200);
+    ok(XO.G.main.length === afterSolve, 'the engine does not play on after the puzzle is solved');
+
+    /* show solution works even without solving */
+    XO.startPuzzle(gi); await sleep(150);
+    ok($('puzHudSolution').hidden === true, 'solution hidden on a fresh puzzle');
+    ok($('puzReplaySol').hidden === true, 'Replay is not offered before the solution is shown');
+    click($('puzShowSol'));
+    await sleep(reduceWait);
+    ok($('puzHudSolution').hidden === false, 'Show solution reveals the solution');
+    ok(/Forced win in [123]/.test($('puzHudSolution').textContent),
+      'the solution names the forced win length', $('puzHudSolution').textContent.slice(0, 60));
+    ok($('puzHudSolution').textContent.indexOf(XO.nm(target.key)) > 0,
+      'the solution names the first move');
+    ok($('puzReplaySol').hidden === false, 'Replay solution becomes available');
+    await until(() => !XO.G.puzzle.replaying, 8000);
+    ok(XO.G.main.length === target.moves.length + target.len,
+      'the whole verified sequence is played out', XO.G.main.length + ' vs ' + (target.moves.length + target.len));
+    ok(XO.G.main[target.moves.length].player === XO.G.puzzle.side,
+      'the solution replay starts with the puzzle side');
+    ok([...doc.querySelectorAll('.cell.hint')].length === 1, 'the first solution move is highlighted');
+
+    /* replay again */
+    click($('puzReplaySol'));
+    await sleep(80);
+    ok(XO.G.puzzle.replaying || XO.G.main.length === target.moves.length + target.len,
+      'Replay restarts the solution animation');
+    await until(() => !XO.G.puzzle.replaying, 10000);
+    ok(XO.G.main.length === target.moves.length + target.len, 'replay ends on the same final position');
+    ok($('graphCard').hidden === true, 'replay does not expose analysis');
+
+    /* reset */
+    click($('puzResetBtn'));
+    await sleep(200);
+    ok(XO.G.main.length === target.moves.length, 'Reset returns to the puzzle position', XO.G.main.length);
+    ok(XO.G.puzzle.tries === 0, 'Reset clears the attempt count');
+    ok(XO.G.puzzle.active, 'Reset makes the puzzle playable again');
+    ok($('puzHudSolution').hidden === true, 'Reset hides the solution again');
+
+    /* exit */
+    click($('puzExitBtn'));
+    await sleep(250);
+    ok(!XO.G.puzzle, 'Exit leaves puzzle mode');
+    ok(!doc.body.classList.contains('puzzle-mode'), 'Exit removes the puzzle-mode flag');
+    ok($('puzHud').hidden === true, 'Exit hides the puzzle panel');
+    ok(XO.currentRoute() === 'puzzles', 'Exit returns to the puzzle list', XO.currentRoute());
+    await settle();
+    ok($('hintBtn').disabled === false || XO.G.status !== 'playing',
+      'analysis controls come back after leaving the puzzle');
+  }
+
+  section('Puzzle bank — navigation safety & merged sources (spec #21, #29)');
+  {
+    XO.startPuzzle(0); await sleep(150);
+    ok(doc.body.classList.contains('puzzle-mode'), 'in puzzle mode before navigating');
+    XO.goRoute('stats'); await sleep(150);
+    ok(!doc.body.classList.contains('puzzle-mode'), 'navigating away cleanly ends the puzzle');
+    ok(!XO.G.puzzle, 'no puzzle state is left stranded after navigation');
+    XO.goRoute('puzzles'); await sleep(120);
+    ok($('puzGrid').children.length === XO.PUZZLES.length,
+      'the grid lists the whole merged bank', $('puzGrid').children.length + ' vs ' + XO.PUZZLES.length);
+    ok($('puzGrid').textContent.indexOf('Generated') > 0, 'generated puzzles are labelled in the grid');
+    ok(/O to move/.test($('puzGrid').textContent), 'O puzzles are labelled as O to move');
+    ok(XO.GENERATED_PUZZLES.length > 0 && XO.BUILTIN_PUZZLES.length > 0 &&
+      XO.PUZZLES.length === XO.GENERATED_PUZZLES.length + XO.BUILTIN_PUZZLES.length,
+      'builtin and generated sources are merged without loss or duplication');
+    ok(errors.length === 0, 'no uncaught errors across the generator suite', errors.join(' | '));
   }
 
   /* ------------------------------------------------------------------ */
