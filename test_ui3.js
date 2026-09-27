@@ -1347,6 +1347,84 @@ async function until(fn, maxMs = 12000) {
   }
 
   /* ------------------------------------------------------------------ */
+  section('V3 PRO Homepage Promotion & Hero (Part 10-16)');
+  {
+    XO.goRoute('home');
+    await sleep(150);
+    ok($('viewHome').hidden === false, 'Hero appears in the initial homepage view');
+    const hero = $('v3ProHero');
+    ok(!!hero, 'V3 PRO hero exists');
+    ok(hero && hero.textContent.indexOf('XO5 FORGE V3 PRO') >= 0, 'Hero displays XO5 FORGE V3 PRO title');
+    ok(hero && hero.textContent.indexOf('THE NEW GENERATION OF THE XO5 ENGINE') >= 0, 'Hero displays new generation eyebrow');
+    ok(hero && hero.textContent.indexOf('Current Generation') >= 0, 'Hero displays Current Generation badge');
+    ok(hero && hero.textContent.indexOf('Available') >= 0, 'Hero displays Available badge');
+    
+    // Feature pills
+    ok(hero && hero.textContent.indexOf('PVS Search') >= 0, 'PVS Search pill present');
+    ok(hero && hero.textContent.indexOf('Aspiration Windows') >= 0, 'Aspiration Windows pill present');
+    ok(hero && hero.textContent.indexOf('Advanced Threat Analysis') >= 0, 'Advanced Threat Analysis pill present');
+
+    // CTAs
+    const playCta = $('heroPlayV3ProBtn');
+    ok(!!playCta, 'V3 PRO CTA exists');
+    ok(playCta && playCta.textContent.indexOf('PLAY WITH V3 PRO') >= 0, 'CTA text is PLAY WITH V3 PRO');
+    const exploreCta = $('heroExploreBtn');
+    ok(!!exploreCta, 'Secondary CTA heroExploreBtn exists');
+
+    // 8-Card Feature Highlights Grid
+    const featGrid = $('v3ProFeatureGrid');
+    ok(!!featGrid, 'Feature highlights grid exists');
+    const featCards = featGrid ? featGrid.querySelectorAll('.v3pro-feat-card') : [];
+    ok(featCards.length === 8, '8-card feature highlight grid present', featCards.length);
+    ok(featGrid && featGrid.textContent.indexOf('Principal Variation Search') >= 0, 'Feature: PVS card');
+    ok(featGrid && featGrid.textContent.indexOf('Aspiration Windows') >= 0, 'Feature: Aspiration Windows card');
+    ok(featGrid && featGrid.textContent.indexOf('Advanced Move Ordering') >= 0, 'Feature: Advanced Move Ordering card');
+    ok(featGrid && featGrid.textContent.indexOf('Generational Transposition Tables') >= 0, 'Feature: Generational TT card');
+    ok(featGrid && featGrid.textContent.indexOf('Enhanced Threat Analysis') >= 0, 'Feature: Enhanced Threat Analysis card');
+    ok(featGrid && featGrid.textContent.indexOf('VCF / VCT Support') >= 0, 'Feature: VCF/VCT card');
+    ok(featGrid && featGrid.textContent.indexOf('Tactical Verification') >= 0, 'Feature: Tactical Verification card');
+    ok(featGrid && featGrid.textContent.indexOf('9-Level Difficulty System') >= 0, 'Feature: 9-Level Difficulty card');
+
+    // Interactive CTA click test
+    click(playCta);
+    await sleep(200);
+    ok(XO.currentRoute() === 'play', 'Clicking CTA opens game setup / play view');
+    ok($('viewGame').hidden === false, 'Game view is shown');
+    ok(XO.pendingGameEngineId === 'forge_v3_pro', 'V3 PRO is preselected');
+
+    // Engine family availability & coming soon status
+    ok(XO.ENGINE_REGISTRY.forge_v3.status === 'available', 'V3 remains available');
+    ok(/coming-soon|coming_soon/.test(XO.ENGINE_REGISTRY.forge_v4.status), 'V4 remains Coming Soon');
+    ok(/coming-soon|coming_soon/.test(XO.ENGINE_REGISTRY.forge_v4_pro.status), 'V4 PRO remains Coming Soon');
+    ok(!XO.isEngineAvailable('forge_v4'), 'V4 is not selectable');
+    ok(!XO.isEngineAvailable('forge_v4_pro'), 'V4 PRO is not selectable');
+
+    // Engine selector still works
+    XO.pendingGameEngineId = 'forge_v3';
+    XO.renderGameSetupEngineSelector();
+    ok(XO.pendingGameEngineId === 'forge_v3', 'Engine selector can choose V3');
+    XO.pendingGameEngineId = 'forge_v3_pro';
+    XO.renderGameSetupEngineSelector();
+    ok(XO.pendingGameEngineId === 'forge_v3_pro', 'Engine selector can switch to V3 PRO');
+
+    // Current-game engine remains locked during gameplay
+    XO.startGame('ai', { humanSide: 1, engineId: 'forge_v3_pro' });
+    await sleep(100);
+    const lockedEngine = XO.currentGameEngineId;
+    ok(lockedEngine === 'forge_v3_pro', 'Current game started with V3 PRO');
+    XO.pendingGameEngineId = 'forge_v3';
+    ok(XO.currentGameEngineId === 'forge_v3_pro', 'Current-game engine remains locked while game is in progress');
+
+    // Human vs Human still shows "AI ENGINE: Not used"
+    XO.startGame('local', {});
+    await sleep(100);
+    const hvhBadge = $('engineBadge');
+    ok(hvhBadge && /Not used|not used/i.test(hvhBadge.textContent), 'Human vs Human still shows AI ENGINE: Not used', hvhBadge && hvhBadge.textContent);
+
+    await settle();
+  }
+
+  /* ------------------------------------------------------------------ */
   console.log('\n---------------------------');
   console.log('UI SUITE  PASS: ' + pass + '   FAIL: ' + fail);
   try { dom.window.close(); } catch (e) {}

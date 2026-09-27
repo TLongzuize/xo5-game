@@ -1,5 +1,5 @@
 /* ===========================================================
-   XO 5-in-a-Row Engine XO5 Forge v3   (UI-independent, testable)
+   XO 5-in-a-Row Engine XO5 Forge v2   (UI-independent, testable)
    Player 1 = X (human, red).  Player 2 = O (AI, blue).
    Score sign inside search: negamax (side-to-move positive).
    Score sign exposed to UI: positive = good for O.
@@ -309,14 +309,13 @@
     var maxPly = opts.maxPly || 8;
     var nodeCap = opts.nodes || 20000;
     var includeThrees = !!opts.vct;
-    var isInf = opts.timeMs === 0 || opts.timeMs === Infinity;
-    var deadline = isInf ? null : Date.now() + (opts.timeMs || 600);
+    var deadline = Date.now() + (opts.timeMs || 600);
     var opp = player === X ? O : X;
     var nodes = 0, aborted = false;
 
     function rec(ply) {
       if (ply > maxPly) return null;
-      if (++nodes > nodeCap || (deadline !== null && Date.now() > deadline) || (opts.shouldAbort && (nodes & 63) === 0 && opts.shouldAbort())) { aborted = true; return null; }
+      if (++nodes > nodeCap || Date.now() > deadline) { aborted = true; return null; }
       var moves = threatMoves(state, player, includeThrees);
       for (var m = 0; m < moves.length; m++) {
         var idx = moves[m].idx;
@@ -324,32 +323,7 @@
         if (winningLineAt(state.board, idx, player)) { state.undo(); return [idx]; }
         var myWins = winningCells(state, player, idx);
         var res = null;
-        if (myWins.length >= 2) {
-          // `idx` is not itself a five - it creates an UNSTOPPABLE DOUBLE THREAT
-          // (two separate squares that would each complete five). The defender
-          // can occupy at most one of them, so the attacker is guaranteed to win
-          // on their very next move - but that is a forced win in TWO of the
-          // attacker's own moves (this one, then the completion), not an
-          // immediate five right now. Prove it concretely, never assume it:
-          // actually play a defensive block, then verify a DIFFERENT winning
-          // square is still genuinely open and winning afterwards.
-          var blocked = myWins[0], finish = null;
-          state.play(blocked, opp);
-          if (!winningLineAt(state.board, blocked, opp)) {
-            for (var w = 1; w < myWins.length && finish == null; w++) {
-              var cand2 = myWins[w];
-              if (state.board[cand2] !== 0) continue;
-              state.play(cand2, player);
-              if (winningLineAt(state.board, cand2, player)) finish = cand2;
-              state.undo();
-            }
-          }
-          state.undo();                          // undo `blocked`
-          if (finish != null) { state.undo(); return [idx, blocked, finish]; }
-          // Degenerate/rare: blocking one square also spoiled the others.
-          // Don't claim a proof we can't demonstrate - fall through with
-          // res left null, so this candidate is simply not treated as a win.
-        }
+        if (myWins.length >= 2) { state.undo(); return [idx]; }
         if (myWins.length === 1) {
           var blk = myWins[0];
           state.play(blk, opp);
@@ -431,8 +405,7 @@
     this.root = player;
     this.opts = opts || {};
     this.tt = opts && opts.tt ? opts.tt : new TT();
-    var isInf = this.opts.timeMs === 0 || this.opts.timeMs === Infinity;
-    this.deadline = isInf ? null : (Date.now() + (this.opts.timeMs != null ? this.opts.timeMs : 1000));
+    this.deadline = Date.now() + (this.opts.timeMs || 1000);
     this.nodes = 0;
     this.aborted = false;
     this.killers = [];
@@ -441,15 +414,8 @@
 
   Search.prototype.timeUp = function () {
     if (this.aborted) return true;
-    if (this.deadline !== null && (this.nodes & 511) === 0 && Date.now() > this.deadline) {
-      this.aborted = true;
-      return true;
-    }
-    if (this.opts.shouldAbort && (this.nodes & 63) === 0 && this.opts.shouldAbort()) {
-      this.aborted = true;
-      return true;
-    }
-    return false;
+    if ((this.nodes & 511) === 0 && Date.now() > this.deadline) this.aborted = true;
+    return this.aborted;
   };
 
   Search.prototype.width = function (depth) {
@@ -554,19 +520,16 @@
   };
 
   /* Root search: iterative deepening, keeps deepest COMPLETED iteration. */
-  Search.prototype.prepare = function () {
-    if (this.prepared) return this.earlyResult;
-    this.prepared = true;
-    this.t0 = Date.now();
+  Search.prototype.run = function () {
+    var self = this;
     var state = this.state, player = this.root, opp = player === X ? O : X;
+    var t0 = Date.now();
 
     var mine = winningCells(state, player);
     if (mine.length) {
-      this.earlyResult = this.finishResult({ idx: mine[0], score: MATE - 1, depth: 1, mateIn: 1, pv: [mine[0]], completed: true, kind: 'win' });
-      return this.earlyResult;
+      return finish({ idx: mine[0], score: MATE - 1, depth: 1, mateIn: 1, pv: [mine[0]], completed: true, kind: 'win' });
     }
     var theirs = winningCells(state, opp);
-    this.theirs = theirs;
 
     // forcing-sequence probe (VCF) — only when the position looks tactical
     var forcing = null;
@@ -575,18 +538,16 @@
         maxPly: this.opts.vcfPly || 8,
         nodes: this.opts.vcfNodes || 12000,
         timeMs: Math.min(400, (this.opts.timeMs || 1000) * 0.3),
-        vct: !!this.opts.vct,
-        shouldAbort: this.opts.shouldAbort
+        vct: !!this.opts.vct
       });
       if (probe.win) forcing = probe.seq;
     }
     if (forcing && forcing.length) {
-      this.earlyResult = this.finishResult({
+      return finish({
         idx: forcing[0], score: MATE - forcing.length, depth: forcing.length,
         mateIn: Math.ceil(forcing.length / 2), pv: forcing.slice(0, 8),
         completed: true, kind: 'vcf'
       });
-      return this.earlyResult;
     }
 
     var rootWidth = this.opts.rootWidth || 12;
@@ -596,223 +557,119 @@
       cands = cands.filter(function (c) { return c.idx === must; });
       if (!cands.length) cands = [{ idx: must, score: 1e9 }];
     }
-    this.cands = cands;
-    if (!cands.length) {
-      this.earlyResult = null;
-      return null;
-    }
+    if (!cands.length) return null;
 
-    this.bestMove = cands[0].idx;
-    this.bestScore = 0;
-    this.reached = 0;
-    this.bestPV = [this.bestMove];
-    this.rootScores = {};
-    this.maxDepth = this.opts.maxDepth || 6;
-    this.iterLog = [];
-    return undefined;
-  };
+    var bestMove = cands[0].idx, bestScore = 0, reached = 0, bestPV = [bestMove];
+    var rootScores = {};
+    var maxDepth = this.opts.maxDepth || 6;
 
-  Search.prototype.step = function (depth) {
-    if (this.aborted || this.timeUp()) return false;
-    var state = this.state, player = this.root, opp = player === X ? O : X;
-    var localBest = -Infinity, localMove = this.bestMove, alpha = -Infinity;
-    var bestMove = this.bestMove;
-    var rootScores = this.rootScores;
-    var ordered = this.cands.slice().sort(function (a, b) {
-      if (a.idx === bestMove) return -1;
-      if (b.idx === bestMove) return 1;
-      return (rootScores[b.idx] == null ? b.score : rootScores[b.idx]) -
-        (rootScores[a.idx] == null ? a.score : rootScores[a.idx]);
-    });
-    var iterScores = {};
-    for (var i = 0; i < ordered.length; i++) {
-      state.play(ordered[i].idx, player);
-      var v = -this.negamax(depth - 1, -Infinity, -alpha, opp, 1, 0);
-      state.undo();
-      if (this.aborted || this.timeUp()) break;
-      iterScores[ordered[i].idx] = v;
-      if (v > localBest) { localBest = v; localMove = ordered[i].idx; }
-      if (v > alpha) alpha = v;
-    }
-    if (this.aborted) return false;                 // discard the incomplete iteration entirely
-    this.bestMove = localMove;
-    this.bestScore = localBest;
-    this.reached = depth;
-    this.rootScores = iterScores;
-    this.bestPV = this.extractPV(8);
-    if (!this.bestPV.length || this.bestPV[0] !== this.bestMove) this.bestPV = [this.bestMove];
-
-    var cl0 = [], self = this;
-    for (var kk0 in this.rootScores) cl0.push({ idx: +kk0, score: this.rootScores[kk0] });
-    cl0.sort(function (a, b) {
-      if (b.score !== a.score) return b.score - a.score;
-      if (a.idx === self.bestMove) return -1;
-      if (b.idx === self.bestMove) return 1;
-      return 0;
-    });
-    var entry = {
-      depth: depth, score: this.bestScore, best: this.bestMove, nodes: this.nodes,
-      timeMs: Date.now() - this.t0, pv: this.bestPV.slice(0, 6), candidates: cl0.slice(0, 5)
-    };
-    this.iterLog.push(entry);
-    if (this.opts.onProgress) this.opts.onProgress(entry);   // real-time: this iteration is fully completed
-    return true;
-  };
-
-  Search.prototype.isDone = function () {
-    if (this.aborted) return true;
-    if (Math.abs(this.bestScore) >= MATE_T) return true;
-    if (this.deadline !== null && Date.now() > this.deadline) return true;
-    if (this.opts.shouldAbort && this.opts.shouldAbort()) return true;
-    return false;
-  };
-
-  Search.prototype.finishResult = function (r) {
-    r.nodes = this.nodes;
-    r.timeMs = Date.now() - (this.t0 || Date.now());
-    r.ttHits = this.tt.hits; r.ttProbes = this.tt.probes;
-    r.stoppedByTime = this.deadline !== null && !!this.aborted;
-    if (!r.candidates) r.candidates = [];
-    if (!r.pv) r.pv = [r.idx];
-    return r;
-  };
-
-  Search.prototype.finish = function () {
-    if (this.earlyResult !== undefined) return this.earlyResult;
-    if (!this.cands || !this.cands.length) return null;
-    var cl = [], self = this;
-    for (var kk in this.rootScores) cl.push({ idx: +kk, score: this.rootScores[kk] });
-    cl.sort(function (a, b) {
-      if (b.score !== a.score) return b.score - a.score;
-      if (a.idx === self.bestMove) return -1;
-      if (b.idx === self.bestMove) return 1;
-      return 0;
-    });
-
-    return this.finishResult({
-      idx: this.bestMove, score: this.bestScore, depth: this.reached, pv: this.bestPV,
-      mateIn: Math.abs(this.bestScore) >= MATE_T ? Math.max(1, Math.ceil((MATE - Math.abs(this.bestScore)) / 2)) : null,
-      completed: !this.aborted, candidates: cl.slice(0, 5), iters: this.iterLog,
-      kind: (this.theirs && this.theirs.length) ? 'block' : 'search'
-    });
-  };
-
-  Search.prototype.run = function () {
-    var early = this.prepare();
-    if (early !== undefined) return early;
-    for (var depth = 1; depth <= this.maxDepth; depth++) {
-      if (this.isDone()) break;
-      this.step(depth);
-      if (this.isDone()) break;
-    }
-    return this.finish();
-  };
-
-  Search.prototype.runAsync = function (yieldFn) {
-    var self = this;
-    var early = self.prepare();
-    if (early !== undefined) return Promise.resolve(early);
-    var depth = 1;
-    function loop() {
-      if (depth > self.maxDepth || self.isDone()) {
-        return Promise.resolve(self.finish());
+    for (var depth = 1; depth <= maxDepth; depth++) {
+      var localBest = -Infinity, localMove = bestMove, alpha = -Infinity;
+      var ordered = cands.slice().sort(function (a, b) {
+        if (a.idx === bestMove) return -1;
+        if (b.idx === bestMove) return 1;
+        return (rootScores[b.idx] == null ? b.score : rootScores[b.idx]) -
+          (rootScores[a.idx] == null ? a.score : rootScores[a.idx]);
+      });
+      var iterScores = {};
+      for (var i = 0; i < ordered.length; i++) {
+        state.play(ordered[i].idx, player);
+        var v = -this.negamax(depth - 1, -Infinity, -alpha, opp, 1, 0);
+        state.undo();
+        if (this.aborted) break;
+        iterScores[ordered[i].idx] = v;
+        if (v > localBest) { localBest = v; localMove = ordered[i].idx; }
+        if (v > alpha) alpha = v;
       }
-      self.step(depth++);
-      if (depth > self.maxDepth || self.isDone()) {
-        return Promise.resolve(self.finish());
+      if (this.aborted) break;                 // discard the incomplete iteration
+      bestMove = localMove; bestScore = localBest; reached = depth;
+      rootScores = iterScores;
+      bestPV = this.extractPV(8);
+      if (!bestPV.length || bestPV[0] !== bestMove) bestPV = [bestMove];
+      if (this.opts.onProgress) {
+        this.opts.onProgress({ depth: depth, score: bestScore, best: bestMove, nodes: this.nodes });
       }
-      return (yieldFn ? yieldFn() : new Promise(function (res) { setTimeout(res, 0); })).then(loop);
+      if (Math.abs(bestScore) >= MATE_T) break;
+      if (Date.now() > this.deadline) break;
     }
-    return loop();
-  };
-  /* ---------- AI levels 1-9 ----------
-     Every level always takes an immediate win and always blocks an immediate
-     loss (that check happens unconditionally at the top of Search.run(),
-     before any of these parameters are consulted) - levels only change how
-     WELL the engine plays everywhere else: search depth ceiling, candidate
-     width, whether the VCF/VCT forcing solver runs, and how often a
-     non-critical move is deliberately sub-optimal ("noise"). Noise never
-     fires when a real tactic (win/block) is on the board. */
-  var LEVELS9 = {
-    1: { label: 'Beginner', maxDepth: 1, width: 4, rootWidth: 5, timeMs: 150, noise: 0.55, vcf: false, vct: false, maxExt: 0 },
-    2: { label: 'Beginner', maxDepth: 2, width: 5, rootWidth: 6, timeMs: 200, noise: 0.45, vcf: false, vct: false, maxExt: 0 },
-    3: { label: 'Easy', maxDepth: 3, width: 6, rootWidth: 7, timeMs: 300, noise: 0.32, vcf: false, vct: false, maxExt: 1 },
-    4: { label: 'Lower Intermediate', maxDepth: 4, width: 6, rootWidth: 8, timeMs: 450, noise: 0.20, vcf: true, vct: false, maxExt: 1 },
-    5: { label: 'Intermediate', maxDepth: 5, width: 7, rootWidth: 9, timeMs: 650, noise: 0.10, vcf: true, vct: false, maxExt: 2 },
-    6: { label: 'Strong Intermediate', maxDepth: 6, width: 8, rootWidth: 10, timeMs: 900, noise: 0.05, vcf: true, vct: true, maxExt: 2 },
-    7: { label: 'Advanced', maxDepth: 8, width: 9, rootWidth: 11, timeMs: 1300, noise: 0.02, vcf: true, vct: true, maxExt: 3 },
-    8: { label: 'Very Strong', maxDepth: 10, width: 10, rootWidth: 12, timeMs: 1800, noise: 0, vcf: true, vct: true, maxExt: 3 },
-    9: { label: 'Maximum', maxDepth: 14, width: 10, rootWidth: 14, timeMs: 2400, noise: 0, vcf: true, vct: true, maxExt: 4 }
-  };
-  // legacy string aliases kept only so older callers/tests degrade sanely
-  var LEVELS = { easy: LEVELS9[3], medium: LEVELS9[5], hard: LEVELS9[8] };
 
-  function levelConfig(level) {
-    if (typeof level === 'string') return LEVELS[level] || LEVELS9[5];
-    var n = Math.max(1, Math.min(9, level | 0 || 5));
-    return LEVELS9[n];
-  }
+    var cl = [];
+    for (var kk in rootScores) cl.push({ idx: +kk, score: rootScores[kk] });
+    cl.sort(function (a, b) { return b.score - a.score; });
+
+    return finish({
+      idx: bestMove, score: bestScore, depth: reached, pv: bestPV,
+      mateIn: Math.abs(bestScore) >= MATE_T ? Math.max(1, Math.ceil((MATE - Math.abs(bestScore)) / 2)) : null,
+      completed: !this.aborted, candidates: cl.slice(0, 5),
+      kind: theirs.length ? 'block' : 'search'
+    });
+
+    function finish(r) {
+      r.nodes = self.nodes;
+      r.timeMs = Date.now() - t0;
+      r.ttHits = self.tt.hits; r.ttProbes = self.tt.probes;
+      r.stoppedByTime = !!self.aborted;
+      if (!r.candidates) r.candidates = [];
+      if (!r.pv) r.pv = [r.idx];
+      return r;
+    }
+  };
+  /* ---------- difficulty ---------- */
+  var LEVELS = {
+    easy: { maxDepth: 3, width: 6, rootWidth: 8, timeMs: 250, noise: 0.35, vcf: false, vct: false, maxExt: 1 },
+    medium: { maxDepth: 6, width: 8, rootWidth: 10, timeMs: 800, noise: 0.04, vcf: true, vct: false, maxExt: 2 },
+    hard: { maxDepth: 12, width: 10, rootWidth: 14, timeMs: 2000, noise: 0, vcf: true, vct: true, maxExt: 4 }
+  };
+
   function withTime(level, timeMs) {
-    var o = Object.assign({}, levelConfig(level));
-    if (timeMs !== undefined && timeMs !== null) o.timeMs = timeMs;
+    var o = Object.assign({}, LEVELS[level] || LEVELS.medium);
+    if (timeMs) o.timeMs = timeMs;
     return o;
   }
 
-  function chooseMove(state, player, level, timeMs, onProgress, shouldAbort) {
-    var o = withTime(level, timeMs);
+  function chooseMove(state, player, difficulty, timeMs, onProgress) {
+    var o = withTime(difficulty, timeMs);
     o.onProgress = onProgress;
-    o.shouldAbort = shouldAbort;
     var s = new Search(state, player, o);
-    function format(res) {
-      if (!res) return null;
-      if (o.noise > 0 && Math.random() < o.noise && !immediateTactic(state, player)) {
-        var c = candidates(state, 6, player);
-        if (c.length > 1) {
-          var pick = c[1 + Math.floor(Math.random() * Math.min(3, c.length - 1))];
-          res.idx = pick.idx; res.kind = 'casual'; res.pv = [pick.idx]; res.mateIn = null;
-        }
+    var res = s.run();
+    if (!res) return null;
+    if (o.noise > 0 && Math.random() < o.noise && !immediateTactic(state, player)) {
+      var c = candidates(state, 6, player);
+      if (c.length > 1) {
+        var pick = c[1 + Math.floor(Math.random() * Math.min(3, c.length - 1))];
+        res.idx = pick.idx; res.kind = 'casual'; res.pv = [pick.idx]; res.mateIn = null;
       }
-      return res;
     }
-    return format(s.run());
+    return res;
   }
 
   /* Analysis: returns O-positive score plus engine telemetry. */
   function analyse(state, sideToMove, opts) {
     opts = opts || {};
-    var isInf = opts.timeMs === 0 || opts.timeMs === Infinity;
-    var budget = isInf ? 0 : (opts.timeMs != null ? opts.timeMs : 1000);
-    // long budgets (30s/60s) or infinite get a much higher depth ceiling so the
-    // time limit -- not an arbitrary maxDepth -- is what stops the search
-    var autoDepth = isInf ? 64 : budget >= 20000 ? 40 : budget >= 8000 ? 22 : budget >= 3000 ? 16 : 12;
     var o = {
-      maxDepth: opts.maxDepth || autoDepth,
+      maxDepth: opts.maxDepth || 12,
       width: opts.width || 10,
       rootWidth: opts.rootWidth || 12,
-      timeMs: budget,
+      timeMs: opts.timeMs || 1000,
       vcf: opts.vcf !== false, vct: !!opts.vct, maxExt: 4,
-      onProgress: opts.onProgress,
-      shouldAbort: opts.shouldAbort
+      onProgress: opts.onProgress
     };
     var s = new Search(state, sideToMove, o);
-    function format(res) {
-      if (!res) return { score: 0, best: null, mateIn: null, depth: 0, nodes: 0, timeMs: 0, pv: [], candidates: [], iters: [] };
-      var flip = sideToMove === X ? 1 : -1;
-      return {
-        score: res.score * flip,
-        rawScore: res.score,
-        best: res.idx,
-        mateIn: res.mateIn,
-        mateFor: res.mateIn ? (res.score > 0 ? sideToMove : (sideToMove === X ? O : X)) : null,
-        depth: res.depth, nodes: res.nodes, timeMs: res.timeMs,
-        ttHits: res.ttHits, ttProbes: res.ttProbes,
-        stoppedByTime: res.stoppedByTime,
-        pv: res.pv, kind: res.kind,
-        candidates: res.candidates.map(function (c) { return { idx: c.idx, score: c.score * flip }; }),
-        iters: (res.iters || []).map(function (it) { return { depth: it.depth, score: it.score * flip, best: it.best, nodes: it.nodes, timeMs: it.timeMs, pv: it.pv }; })
-      };
-    }
-    return format(s.run());
+    var res = s.run();
+    if (!res) return { score: 0, best: null, mateIn: null, depth: 0, nodes: 0, timeMs: 0, pv: [], candidates: [] };
+    var flip = sideToMove === O ? 1 : -1;
+    return {
+      score: res.score * flip,
+      rawScore: res.score,
+      best: res.idx,
+      mateIn: res.mateIn,
+      mateFor: res.mateIn ? (res.score > 0 ? sideToMove : (sideToMove === X ? O : X)) : null,
+      depth: res.depth, nodes: res.nodes, timeMs: res.timeMs,
+      ttHits: res.ttHits, ttProbes: res.ttProbes,
+      stoppedByTime: res.stoppedByTime,
+      pv: res.pv, kind: res.kind,
+      candidates: res.candidates.map(function (c) { return { idx: c.idx, score: c.score * flip }; })
+    };
   }
 
   /* ---------- threat map & explanations ---------- */
@@ -898,7 +755,6 @@
   root.XOEngine = {
     SIZE: SIZE, LEN: LEN, X: X, O: O, MATE: MATE, MATE_THRESHOLD: MATE_T,
     State: State, Search: Search, TT: TT,
-    LEVELS9: LEVELS9, levelConfig: levelConfig,
     candidates: candidates, quickScore: quickScore, immediateTactic: immediateTactic,
     winningLineAt: winningLineAt, winningCells: winningCells,
     chooseMove: chooseMove, analyse: analyse, solveForcing: solveForcing,

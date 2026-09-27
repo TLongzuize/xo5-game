@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<title>XO 5 in a Row</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --x:#EF4444; --o:#3B82F6;
+  --bg:#F2F4F7; --card:#FFFFFF; --card-2:#FAFBFC;
+  --line:#E4E7EC; --line-strong:#D0D5DD;
+  --text:#101828; --text-2:#475467; --text-3:#98A2B3;
+  --accent:#111827; --accent-text:#FFFFFF;
+  --focus:#7C8698;
+  --board-bg:#FFFFFF; --board-line:#E4E7EC; --board-hover:#F2F4F7;
+  --shadow:0 1px 2px rgba(16,24,40,.05), 0 8px 24px -12px rgba(16,24,40,.14);
+  --radius:14px;
+  --board-size:600px;
+  --ok:#12B76A; --warn:#F79009; --bad:#F04438;
+}
+html[data-theme="dark"]{
+  --bg:#0E1116; --card:#161A21; --card-2:#1B202A;
+  --line:#252B36; --line-strong:#333B49;
+  --text:#E7EBF0; --text-2:#9BA6B5; --text-3:#6B7686;
+  --accent:#E7EBF0; --accent-text:#0E1116;
+  --focus:#8FA0B8;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 12px 32px -16px rgba(0,0,0,.6);
+}
+/* The board itself stays light in both themes (spec §26) */
+html[data-theme="dark"]{ --board-bg:#FFFFFF; --board-line:#E4E7EC; --board-hover:#F2F4F7; }
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:14px; line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+button{font-family:inherit}
+:focus-visible{outline:2px solid var(--focus); outline-offset:2px; border-radius:6px}
+.mono{font-family:"Space Grotesk",ui-monospace,monospace; font-variant-numeric:tabular-nums}
+
+/* ---------- layout ---------- */
+.shell{max-width:1200px;margin:0 auto;padding:18px 18px 56px}
+header.top{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin-bottom:18px;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand-mark{
+  width:32px;height:32px;border-radius:9px;flex:none;
+  background:var(--card);border:1px solid var(--line);
+  display:grid;place-items:center;box-shadow:var(--shadow)
+}
+.brand h1{
+  font-family:"Space Grotesk",sans-serif;font-size:18px;font-weight:700;
+  letter-spacing:-.01em;margin:0;white-space:nowrap
+}
+.brand .tag{color:var(--text-3);font-size:12px;margin:0}
+.top-actions{display:flex;gap:8px;align-items:center}
+
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px;align-items:start}
+@media (max-width:980px){ .layout{grid-template-columns:minmax(0,1fr)} }
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card-pad{padding:16px}
+.card+.card{margin-top:14px}
+.card-title{
+  font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--text-3);
+  margin:0 0 10px;text-transform:uppercase
+}
+
+/* ---------- status strip ---------- */
+.statusbar{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap
+}
+.status-main{display:flex;align-items:center;gap:10px;min-width:0}
+.turn-chip{
+  width:26px;height:26px;border-radius:8px;display:grid;place-items:center;flex:none;
+  border:1.5px solid currentColor;font-weight:700;font-size:13px;font-family:"Space Grotesk",sans-serif
+}
+.turn-chip.x{color:var(--x)} .turn-chip.o{color:var(--o)}
+#statusText{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:16px;white-space:nowrap}
+#statusText.win{color:var(--ok)} #statusText.lose{color:var(--x)}
+.status-meta{display:flex;gap:14px;color:var(--text-3);font-size:12px;flex-wrap:wrap}
+.status-meta b{color:var(--text-2);font-weight:600}
+.dots{display:inline-flex;gap:3px;margin-left:2px;vertical-align:middle}
+.dots i{width:4px;height:4px;border-radius:50%;background:var(--text-3);animation:blink 1.2s infinite}
+.dots i:nth-child(2){animation-delay:.2s} .dots i:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+
+.timers{display:flex;gap:8px;align-items:center}
+.timer{
+  padding:3px 9px;border-radius:8px;border:1px solid var(--line);
+  font-size:13px;font-weight:600;color:var(--text-2);background:var(--card-2)
+}
+.timer.active{border-color:var(--text-2);color:var(--text)}
+.timer.low{color:var(--x);border-color:var(--x)}
+
+/* ---------- board ---------- */
+.board-area{padding:16px;display:grid;place-items:center}
+.board-shell{width:100%;max-width:var(--board-size);margin:0 auto}
+@media (max-width:980px){ .board-shell{max-width:min(100%,560px)} }
+
+.board-grid{
+  display:grid;width:100%;aspect-ratio:1;
+  background:var(--board-bg);
+  border:1px solid var(--line-strong);border-radius:10px;overflow:hidden;
+  touch-action:manipulation;
+}
+.board-grid.with-coords{grid-template-columns:22px repeat(15,1fr);grid-template-rows:20px repeat(15,1fr)}
+.board-grid:not(.with-coords){grid-template-columns:repeat(15,1fr);grid-template-rows:repeat(15,1fr)}
+.coord{
+  display:grid;place-items:center;font-size:9px;color:#98A2B3;
+  font-family:"Space Grotesk",sans-serif;background:var(--board-bg);user-select:none
+}
+.cell{
+  position:relative;padding:0;margin:0;border:0;background:transparent;cursor:pointer;
+  border-right:1px solid var(--board-line);border-bottom:1px solid var(--board-line);
+  display:grid;place-items:center;transition:background .12s ease;
+}
+.cell:nth-child(15n+15){border-right:0}
+.board-grid.with-coords .cell{border-right:1px solid var(--board-line)}
+.cell svg{width:72%;height:72%;display:block;pointer-events:none}
+.cell[data-occupied="0"]:not([disabled]):hover{background:var(--board-hover)}
+.cell[disabled]{cursor:default}
+
+/* hover ghost */
+.board-grid[data-turn="1"] .cell[data-occupied="0"]:not([disabled]):hover::after,
+.board-grid[data-turn="2"] .cell[data-occupied="0"]:not([disabled]):hover::after{
+  content:"";position:absolute;inset:14%;opacity:.28;
+  background-repeat:no-repeat;background-position:center;background-size:contain;
+}
+.board-grid[data-turn="1"] .cell[data-occupied="0"]:not([disabled]):hover::after{
+  background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23EF4444" stroke-width="3.4" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>');
+}
+.board-grid[data-turn="2"] .cell[data-occupied="0"]:not([disabled]):hover::after{
+  background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%233B82F6" stroke-width="3.2"><circle cx="12" cy="12" r="7.4"/></svg>');
+}
+.mark-x{stroke:var(--x);stroke-width:3.4;stroke-linecap:round;fill:none}
+.mark-o{stroke:var(--o);stroke-width:3.2;fill:none}
+.cell.placed svg{animation:pop .16s ease-out}
+@keyframes pop{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+.cell.last::before{
+  content:"";position:absolute;inset:8%;border:2px solid var(--text-3);border-radius:6px;opacity:.5
+}
+.cell.win{background:rgba(18,183,106,.13);animation:winpulse 1.6s ease-in-out infinite}
+@keyframes winpulse{0%,100%{background:rgba(18,183,106,.10)}50%{background:rgba(18,183,106,.26)}}
+.cell.hintcell::before{
+  content:"";position:absolute;inset:6%;border:2px dashed var(--o);border-radius:7px;
+  animation:hintpulse 1.3s ease-in-out infinite
+}
+@keyframes hintpulse{0%,100%{opacity:.45}50%{opacity:1}}
+.cell.bestmove::before{
+  content:"";position:absolute;inset:6%;border:2px solid var(--ok);border-radius:7px;opacity:.75
+}
+@media (prefers-reduced-motion:reduce){
+  .cell.win,.cell.hintcell::before,.cell.placed svg{animation:none}
+}
+
+/* ---------- controls ---------- */
+.controls{display:flex;gap:8px;flex-wrap:wrap;padding:14px 16px;border-top:1px solid var(--line)}
+.btn{
+  border:1px solid var(--line-strong);background:var(--card);color:var(--text);
+  padding:9px 14px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;
+  transition:background .14s ease,border-color .14s ease,transform .06s ease;
+}
+.btn:hover:not(:disabled){background:var(--card-2);border-color:var(--text-3)}
+.btn:active:not(:disabled){transform:translateY(1px)}
+.btn:disabled{opacity:.42;cursor:not-allowed}
+.btn.primary{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.btn.primary:hover:not(:disabled){opacity:.9;background:var(--accent)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.icon{padding:8px;width:36px;height:36px;display:grid;place-items:center}
+.btn.sm{padding:6px 10px;font-size:12px;border-radius:8px}
+
+/* segmented control */
+.seg{display:inline-flex;background:var(--card-2);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+.seg button{
+  border:0;background:transparent;color:var(--text-2);padding:7px 13px;border-radius:7px;
+  font-size:13px;font-weight:600;cursor:pointer;transition:background .14s,color .14s
+}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--text);box-shadow:0 1px 2px rgba(16,24,40,.08)}
+html[data-theme="dark"] .seg button[aria-pressed="true"]{box-shadow:none;background:var(--line)}
+
+/* ---------- eval panel ---------- */
+.eval-wrap{display:flex;gap:14px;align-items:stretch}
+.eval-bar{
+  position:relative;width:46px;min-height:240px;border-radius:12px;overflow:hidden;
+  border:1px solid var(--line-strong);background:var(--x);flex:none;
+  display:flex;flex-direction:column;
+}
+.eval-o{background:var(--o);transition:height .5s cubic-bezier(.4,0,.2,1);height:50%}
+.eval-mid{position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(255,255,255,.55)}
+.eval-cap{
+  position:absolute;left:0;right:0;text-align:center;font-size:11px;font-weight:700;
+  color:#fff;font-family:"Space Grotesk",sans-serif;opacity:.9
+}
+.eval-cap.top{top:6px} .eval-cap.bot{bottom:6px}
+.eval-side{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:10px}
+.eval-num{font-family:"Space Grotesk",sans-serif;font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.eval-desc{color:var(--text-2);font-size:13px}
+.eval-sub{color:var(--text-3);font-size:11.5px}
+.bestmove-row{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding-top:10px;border-top:1px solid var(--line);margin-top:2px
+}
+.bestmove-val{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:15px}
+@media (max-width:980px){
+  .eval-wrap{flex-direction:column}
+  .eval-bar{width:100%;min-height:0;height:38px;flex-direction:row-reverse}
+  .eval-o{height:100%;width:50%;transition:width .5s cubic-bezier(.4,0,.2,1)}
+  .eval-mid{top:0;bottom:0;left:50%;right:auto;width:1px;height:auto}
+  .eval-cap.top{top:50%;transform:translateY(-50%);right:8px;left:auto;text-align:right}
+  .eval-cap.bot{bottom:50%;transform:translateY(50%);left:8px;right:auto;text-align:left}
+  .eval-side{text-align:left}
+}
+
+/* ---------- scoreboard / stats ---------- */
+.score-row{display:flex;align-items:center;justify-content:space-around;text-align:center;gap:8px}
+.score-cell .lbl{font-size:11px;color:var(--text-3);font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.score-cell .val{font-family:"Space Grotesk",sans-serif;font-size:26px;font-weight:700;line-height:1.2}
+.score-cell.x .val{color:var(--x)} .score-cell.o .val{color:var(--o)}
+.stat-grid{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:13px}
+.stat-grid dt{color:var(--text-2)} .stat-grid dd{margin:0;text-align:right;font-weight:600;font-family:"Space Grotesk",sans-serif}
+
+/* ---------- move history ---------- */
+.moves{max-height:210px;overflow-y:auto;scrollbar-width:thin}
+.move-row{display:grid;grid-template-columns:28px 1fr 1fr;gap:6px;align-items:center;padding:2px 0}
+.move-row .n{color:var(--text-3);font-size:11px;font-family:"Space Grotesk",sans-serif}
+.mv{
+  text-align:left;border:0;background:transparent;cursor:pointer;border-radius:6px;padding:4px 7px;
+  font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:12.5px;color:var(--text-2);
+  display:flex;align-items:center;gap:6px
+}
+.mv:hover{background:var(--card-2)}
+.mv.x{color:var(--x)} .mv.o{color:var(--o)}
+.mv.current{background:var(--card-2);outline:1px solid var(--line-strong)}
+.mv .q{font-size:10px;font-weight:700;padding:1px 4px;border-radius:4px;letter-spacing:.02em}
+.q.excellent{background:rgba(18,183,106,.16);color:#0B815A}
+.q.good{background:rgba(18,183,106,.10);color:#0B815A}
+.q.inaccuracy{background:rgba(247,144,9,.14);color:#B54708}
+.q.mistake{background:rgba(240,68,56,.12);color:#B42318}
+.q.blunder{background:rgba(240,68,56,.2);color:#912018}
+.empty-note{color:var(--text-3);font-size:12.5px;padding:6px 0}
+
+/* ---------- graph ---------- */
+.graph{width:100%;height:96px;display:block}
+.graph-zero{stroke:var(--line-strong);stroke-width:1;stroke-dasharray:3 3}
+.graph-line{fill:none;stroke:var(--text-2);stroke-width:1.8;stroke-linejoin:round}
+.graph-area-o{fill:rgba(59,130,246,.16)} .graph-area-x{fill:rgba(239,68,68,.16)}
+
+/* ---------- modal ---------- */
+.overlay{
+  position:fixed;inset:0;background:rgba(16,24,40,.45);backdrop-filter:blur(3px);
+  display:none;place-items:center;padding:18px;z-index:60
+}
+.overlay.open{display:grid}
+.modal{
+  background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 64px -20px rgba(16,24,40,.45);
+  width:100%;max-width:460px;max-height:min(86vh,760px);overflow:auto;
+}
+.modal.wide{max-width:560px}
+.modal-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:16px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--card);z-index:2
+}
+.modal-head h2{font-family:"Space Grotesk",sans-serif;font-size:16px;margin:0;font-weight:700}
+.modal-body{padding:18px}
+.modal-foot{display:flex;gap:8px;justify-content:flex-end;padding:14px 18px;border-top:1px solid var(--line)}
+@media (max-width:560px){
+  .overlay{padding:0;align-items:end}
+  .modal{max-width:none;border-radius:18px 18px 0 0;max-height:92vh}
+}
+
+.set-group+.set-group{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.set-group h3{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);margin:0 0 12px}
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 0;flex-wrap:wrap}
+.set-row .label{font-size:13.5px;font-weight:500}
+.set-row .hint{font-size:11.5px;color:var(--text-3);margin-top:1px}
+.switch{
+  position:relative;width:42px;height:24px;border-radius:99px;border:1px solid var(--line-strong);
+  background:var(--card-2);cursor:pointer;transition:background .16s,border-color .16s;flex:none
+}
+.switch::after{
+  content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+  background:var(--text-3);transition:transform .16s,background .16s
+}
+.switch[aria-checked="true"]{background:var(--accent);border-color:var(--accent)}
+.switch[aria-checked="true"]::after{transform:translateX(18px);background:var(--accent-text)}
+input[type=range]{accent-color:var(--accent);width:130px}
+textarea.io{
+  width:100%;min-height:150px;border-radius:10px;border:1px solid var(--line-strong);
+  background:var(--card-2);color:var(--text);padding:10px;font-family:ui-monospace,monospace;font-size:12px;resize:vertical
+}
+.diff-desc{font-size:12px;color:var(--text-3);margin-top:6px}
+
+/* end screen */
+.result-card{text-align:center;padding:10px 4px 4px}
+.result-title{font-family:"Space Grotesk",sans-serif;font-size:30px;font-weight:700;margin:6px 0 4px;letter-spacing:-.02em}
+.result-title.win{color:var(--ok)} .result-title.lose{color:var(--x)} .result-title.draw{color:var(--text-2)}
+.result-sub{color:var(--text-2);margin-bottom:16px}
+.summary-grid{display:grid;grid-template-columns:1fr auto;gap:8px 12px;text-align:left;font-size:13px;
+  background:var(--card-2);border:1px solid var(--line);border-radius:12px;padding:14px}
+.summary-grid dt{color:var(--text-2)}
+.summary-grid dd{margin:0;text-align:right;font-weight:600;font-family:"Space Grotesk",sans-serif}
+.toast{
+  position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);
+  background:var(--accent);color:var(--accent-text);padding:10px 16px;border-radius:99px;
+  font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:all .25s ease;z-index:80
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.kbd{font-family:"Space Grotesk",monospace;font-size:11px;border:1px solid var(--line-strong);border-bottom-width:2px;
+  border-radius:5px;padding:1px 5px;color:var(--text-3)}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="top">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <line x1="3" y1="3" x2="11" y2="11" stroke="#EF4444" stroke-width="2.6" stroke-linecap="round"/>
+          <line x1="11" y1="3" x2="3" y2="11" stroke="#EF4444" stroke-width="2.6" stroke-linecap="round"/>
+          <circle cx="16.5" cy="16.5" r="4.4" stroke="#3B82F6" stroke-width="2.6"/>
+        </svg>
+      </div>
+      <div>
+        <h1>XO 5 in a Row</h1>
+        <p class="tag">15 × 15 · five or more to win</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="btn icon" id="themeBtn" title="Toggle dark mode" aria-label="Toggle dark mode">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+      <button class="btn" id="settingsBtn" aria-haspopup="dialog">
+        <span style="display:inline-flex;align-items:center;gap:6px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.35.4.65.73.85.3.18.64.28 1 .28H21a2 2 0 1 1 0 4h-.09c-.36 0-.7.1-1 .28-.33.2-.59.5-.73.85z"/></svg>
+          Settings
+        </span>
+      </button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- ================= LEFT: board ================= -->
+    <div>
+      <section class="card" aria-label="Game board">
+        <div class="statusbar">
+          <div class="status-main">
+            <span class="turn-chip x" id="turnChip" aria-hidden="true">X</span>
+            <span id="statusText">Your Turn</span>
+          </div>
+          <div class="timers" id="timers" hidden>
+            <span class="timer" id="timerX">You 5:00</span>
+            <span class="timer" id="timerO">AI 5:00</span>
+          </div>
+          <div class="status-meta">
+            <span>Difficulty <b id="metaDiff">Medium</b></span>
+            <span>Moves <b id="metaMoves">0</b></span>
+            <span id="metaEngine">&nbsp;</span>
+          </div>
+        </div>
+
+        <div class="board-area">
+          <div class="board-shell">
+            <div class="board-grid with-coords" id="board" role="grid" aria-label="15 by 15 game board" data-turn="1"></div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button class="btn primary" id="newBtn">New Game</button>
+          <button class="btn" id="undoBtn" disabled>Undo</button>
+          <button class="btn" id="hintBtn">Hint</button>
+          <div style="flex:1"></div>
+          <button class="btn sm" id="saveBtn">Save</button>
+          <button class="btn sm" id="loadBtn">Load</button>
+          <button class="btn sm" id="shareBtn">Share</button>
+        </div>
+      </section>
+      <p style="color:var(--text-3);font-size:11.5px;margin:10px 2px 0">
+        Shortcuts <span class="kbd">N</span> new game · <span class="kbd">U</span> undo · <span class="kbd">H</span> hint · <span class="kbd">Esc</span> close
+      </p>
+    </div>
+
+    <!-- ================= RIGHT: analysis ================= -->
+    <div>
+      <section class="card card-pad" id="evalCard">
+        <p class="card-title">Evaluation</p>
+        <div class="eval-wrap">
+          <div class="eval-bar" id="evalBar" role="img" aria-label="Evaluation bar">
+            <div class="eval-o" id="evalO"></div>
+            <div class="eval-mid"></div>
+            <span class="eval-cap top">O</span>
+            <span class="eval-cap bot">X</span>
+          </div>
+          <div class="eval-side">
+            <div>
+              <div class="eval-num" id="evalNum">0.0</div>
+              <div class="eval-desc" id="evalDesc">Equal position</div>
+              <div class="eval-sub" id="evalSub">Depth —</div>
+            </div>
+            <div class="bestmove-row" id="bestRow" hidden>
+              <span style="color:var(--text-2);font-size:12.5px">Best Move</span>
+              <span class="bestmove-val" id="bestVal">—</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card card-pad">
+        <p class="card-title">Score</p>
+        <div class="score-row">
+          <div class="score-cell x"><div class="val" id="scWins">0</div><div class="lbl">You</div></div>
+          <div class="score-cell"><div class="val" id="scDraws">0</div><div class="lbl">Draws</div></div>
+          <div class="score-cell o"><div class="val" id="scLosses">0</div><div class="lbl">AI</div></div>
+        </div>
+      </section>
+
+      <section class="card card-pad">
+        <p class="card-title">Move History</p>
+        <div class="moves" id="moveList"><p class="empty-note">No moves yet.</p></div>
+      </section>
+
+      <section class="card card-pad" id="graphCard">
+        <p class="card-title">Evaluation Graph</p>
+        <svg class="graph" id="graph" viewBox="0 0 300 96" preserveAspectRatio="none" aria-label="Evaluation over time"></svg>
+      </section>
+
+      <section class="card card-pad">
+        <p class="card-title">Statistics</p>
+        <dl class="stat-grid" id="statGrid"></dl>
+        <button class="btn sm" id="resetScoreBtn" style="margin-top:12px">Reset Score</button>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- ================= modals ================= -->
+<div class="overlay" id="settingsOverlay" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+  <div class="modal" role="document">
+    <div class="modal-head">
+      <h2 id="setTitle">Settings</h2>
+      <button class="btn icon ghost" data-close aria-label="Close settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="set-group">
+        <h3>Gameplay</h3>
+        <div class="set-row">
+          <div><div class="label">Difficulty</div><div class="hint" id="diffHint">Balanced challenge</div></div>
+          <div class="seg" id="diffSeg" role="group" aria-label="Difficulty">
+            <button data-v="easy" aria-pressed="false">Easy</button>
+            <button data-v="medium" aria-pressed="true">Medium</button>
+            <button data-v="hard" aria-pressed="false">Hard</button>
+          </div>
+        </div>
+        <div class="set-row">
+          <div><div class="label">First player</div><div class="hint">Applies to the next game</div></div>
+          <div class="seg" id="firstSeg" role="group" aria-label="First player">
+            <button data-v="you" aria-pressed="true">You</button>
+            <button data-v="ai" aria-pressed="false">AI</button>
+            <button data-v="random" aria-pressed="false">Random</button>
+          </div>
+        </div>
+        <div class="set-row">
+          <div><div class="label">Timer</div><div class="hint">Per-player countdown</div></div>
+          <div class="seg" id="timerSeg" role="group" aria-label="Timer">
+            <button data-v="0" aria-pressed="true">Off</button>
+            <button data-v="1" aria-pressed="false">1m</button>
+            <button data-v="3" aria-pressed="false">3m</button>
+            <button data-v="5" aria-pressed="false">5m</button>
+            <button data-v="10" aria-pressed="false">10m</button>
+          </div>
+        </div>
+        <div class="set-row">
+          <div><div class="label">Hints</div><div class="hint">Allow the Hint button</div></div>
+          <button class="switch" id="swHints" role="switch" aria-checked="true" aria-label="Hints"></button>
+        </div>
+        <div class="set-row">
+          <div><div class="label">Move quality</div><div class="hint">Label your moves after each turn</div></div>
+          <button class="switch" id="swQuality" role="switch" aria-checked="true" aria-label="Move quality"></button>
+        </div>
+      </div>
+
+      <div class="set-group">
+        <h3>Appearance</h3>
+        <div class="set-row">
+          <div class="label">Theme</div>
+          <div class="seg" id="themeSeg" role="group" aria-label="Theme">
+            <button data-v="light" aria-pressed="true">Light</button>
+            <button data-v="dark" aria-pressed="false">Dark</button>
+          </div>
+        </div>
+        <div class="set-row">
+          <div class="label">Board coordinates</div>
+          <button class="switch" id="swCoords" role="switch" aria-checked="true" aria-label="Board coordinates"></button>
+        </div>
+        <div class="set-row">
+          <div class="label">Board size</div>
+          <input type="range" id="sizeRange" min="380" max="760" step="20" value="600" aria-label="Board size">
+        </div>
+      </div>
+
+      <div class="set-group">
+        <h3>Audio</h3>
+        <div class="set-row">
+          <div><div class="label">Sound effects</div><div class="hint">Subtle move and result tones</div></div>
+          <button class="switch" id="swSound" role="switch" aria-checked="true" aria-label="Sound effects"></button>
+        </div>
+      </div>
+
+      <div class="set-group">
+        <h3>Analysis</h3>
+        <div class="set-row"><div class="label">Evaluation bar</div>
+          <button class="switch" id="swEval" role="switch" aria-checked="true" aria-label="Evaluation bar"></button></div>
+        <div class="set-row"><div class="label">Best move indicator</div>
+          <button class="switch" id="swBest" role="switch" aria-checked="false" aria-label="Best move indicator"></button></div>
+        <div class="set-row"><div class="label">Evaluation graph</div>
+          <button class="switch" id="swGraph" role="switch" aria-checked="true" aria-label="Evaluation graph"></button></div>
+      </div>
+
+      <div class="set-group">
+        <h3>Data</h3>
+        <div class="set-row"><div class="label">Export / import game</div>
+          <div style="display:flex;gap:8px"><button class="btn sm" id="exportBtn">Export</button><button class="btn sm" id="importBtn">Import</button></div></div>
+        <div class="set-row"><div class="label">Reset statistics</div><button class="btn sm" id="resetStatsBtn">Reset</button></div>
+        <div class="set-row"><div class="label">Reset settings</div><button class="btn sm" id="resetSettingsBtn">Reset</button></div>
+        <div class="set-row"><div class="label">Clear saved game</div><button class="btn sm" id="clearSaveBtn">Clear</button></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn primary" data-close>Done</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="confirmOverlay" role="dialog" aria-modal="true" aria-labelledby="confTitle">
+  <div class="modal" style="max-width:400px" role="document">
+    <div class="modal-head"><h2 id="confTitle">Confirm</h2></div>
+    <div class="modal-body"><p id="confText" style="margin:0;color:var(--text-2)"></p></div>
+    <div class="modal-foot">
+      <button class="btn" id="confCancel">Cancel</button>
+      <button class="btn primary" id="confOk">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="endOverlay" role="dialog" aria-modal="true" aria-labelledby="endTitle">
+  <div class="modal" role="document">
+    <div class="modal-body">
+      <div class="result-card">
+        <div class="result-title" id="endTitle">You Win!</div>
+        <p class="result-sub" id="endSub">Five in a row.</p>
+      </div>
+      <dl class="summary-grid" id="endSummary"></dl>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="reviewBtn">Review Game</button>
+      <button class="btn primary" id="againBtn">Play Again</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="ioOverlay" role="dialog" aria-modal="true" aria-labelledby="ioTitle">
+  <div class="modal wide" role="document">
+    <div class="modal-head">
+      <h2 id="ioTitle">Export Game</h2>
+      <button class="btn icon ghost" data-close aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p id="ioHelp" style="margin:0 0 10px;color:var(--text-2);font-size:13px"></p>
+      <textarea class="io" id="ioText" spellcheck="false"></textarea>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" data-close>Close</button>
+      <button class="btn primary" id="ioAction">Copy</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<p class="sr-only" id="srStatus" role="status" aria-live="polite"></p>
+
+<script>
+/* ENGINE_PLACEHOLDER */
+</script>
+<script>
+/* APP_PLACEHOLDER */
+</script>
+</body>
+</html>

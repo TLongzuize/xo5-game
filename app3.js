@@ -3461,6 +3461,28 @@
   });
   $('brandBtn').onclick = function () { goRoute('home'); };
 
+  /* V3 PRO Hero Banner Interactive CTAs */
+  var playV3ProBtn = $('heroPlayV3ProBtn');
+  if (playV3ProBtn) {
+    playV3ProBtn.onclick = function () {
+      pendingGameEngineId = 'forge_v3_pro';
+      goRoute('play');
+      pendingGameEngineId = 'forge_v3_pro';
+      renderGameSetupEngineSelector();
+      setEngineBadge();
+    };
+  }
+  var heroExploreBtn = $('heroExploreBtn');
+  if (heroExploreBtn) {
+    heroExploreBtn.onclick = function () {
+      var target = $('v3ProFeatureGrid') || $('forgeHead');
+      if (target && typeof window.scrollTo === 'function') {
+        var top = (target.getBoundingClientRect().top || 0) + (window.pageYOffset || (document.documentElement && document.documentElement.scrollTop) || 0) - 70;
+        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+      }
+    };
+  }
+
   /* ---------------- mobile navigation drawer ---------------- */
   var topBar = $('topBar') || document.querySelector('header.top');
   var navToggle = $('navToggle');

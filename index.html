@@ -500,6 +500,150 @@ header.top.stuck{border-bottom-color:var(--line)}
   .home-sec{margin-bottom:var(--s7)}
 }
 
+/* ----------------------------------------------------------- V3 PRO Hero Banner */
+.v3pro-hero {
+  position:relative;overflow:hidden;
+  background:linear-gradient(155deg, var(--ink-2) 0%, var(--ink-1) 50%, #070B16 100%);
+  border:1px solid color-mix(in srgb, var(--brass) 32%, rgba(255,255,255,.08));
+  border-radius:var(--r5);color:var(--ink-text);
+  padding:clamp(24px, 4vw, 44px);
+  margin-bottom:var(--s6);
+  box-shadow:0 30px 80px -40px rgba(6,12,24,.9), 0 0 0 1px color-mix(in srgb, var(--brass) 18%, transparent) inset;
+  isolation:isolate;
+}
+.v3pro-hero-glow {
+  position:absolute;z-index:0;pointer-events:none;
+  width:min(600px, 80%);aspect-ratio:1;right:-10%;top:-30%;
+  background:radial-gradient(circle, color-mix(in srgb, var(--brass) 22%, transparent), transparent 70%);
+  filter:blur(24px);
+}
+.v3pro-hero-glow.blue {
+  right:auto;left:-15%;top:auto;bottom:-40%;
+  background:radial-gradient(circle, rgba(59,130,246,.20), transparent 70%);
+}
+.v3pro-hero-inner {
+  position:relative;z-index:1;display:flex;flex-direction:column;gap:18px;
+}
+.v3pro-hero-badge-row {
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.v3pro-pill {
+  display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;
+  padding:5px 12px;border-radius:99px;letter-spacing:.02em;
+}
+.v3pro-pill.current {
+  background:color-mix(in srgb, var(--brass-soft) 22%, rgba(0,0,0,.35));
+  border:1px solid color-mix(in srgb, var(--brass) 50%, transparent);
+  color:var(--brass);
+}
+.v3pro-pill.available {
+  background:color-mix(in srgb, var(--ok) 18%, rgba(0,0,0,.35));
+  border:1px solid color-mix(in srgb, var(--ok) 40%, transparent);
+  color:#6EE7B7;
+}
+.v3pro-dot {
+  width:6px;height:6px;border-radius:50%;flex:none;
+}
+.v3pro-dot.current {
+  background:var(--brass);box-shadow:0 0 8px var(--brass);
+}
+.v3pro-dot.available {
+  background:#10B981;box-shadow:0 0 8px #10B981;
+}
+.v3pro-hero-brand {
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+}
+.v3pro-hero-logo {
+  width:60px;height:60px;object-fit:contain;border-radius:var(--r2);
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  padding:5px;flex:none;box-sizing:border-box;
+}
+.v3pro-hero-titles {
+  display:flex;flex-direction:column;gap:4px;
+}
+.v3pro-eyebrow {
+  font-size:12px;font-weight:700;letter-spacing:.09em;color:var(--brass);
+  text-transform:uppercase;margin:0;
+}
+.v3pro-title {
+  font-family:Archivo, sans-serif;font-size:clamp(26px, 4vw, 42px);font-weight:800;
+  line-height:1.1;letter-spacing:-.03em;color:#FFFFFF;margin:0;
+}
+.v3pro-feature-pills {
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  font-size:13px;font-weight:550;color:var(--ink-text-2);
+}
+.v3pro-feature-pills span:nth-child(even) {
+  color:var(--brass);opacity:.7;
+}
+.v3pro-hero-desc {
+  font-size:clamp(14px, 1.2vw, 16px);line-height:1.6;color:var(--ink-text-2);
+  max-width:72ch;margin:0;
+}
+.v3pro-hero-actions {
+  display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:6px;
+}
+.v3pro-play-cta {
+  background:linear-gradient(135deg, var(--brass), #E2A740);
+  color:#111624 !important;font-weight:750 !important;border:0;cursor:pointer;
+  padding:14px 28px;border-radius:var(--r2);font-size:15px;letter-spacing:.02em;
+  display:inline-flex;align-items:center;gap:8px;
+  box-shadow:0 6px 24px color-mix(in srgb, var(--brass) 35%, transparent);
+  transition:transform .16s, box-shadow .16s, filter .16s;
+}
+.v3pro-play-cta:hover {
+  transform:translateY(-2px);filter:brightness(1.08);
+  box-shadow:0 8px 30px color-mix(in srgb, var(--brass) 50%, transparent);
+}
+.v3pro-explore-cta {
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.2);
+  color:#FFFFFF;font-weight:600;cursor:pointer;padding:14px 24px;
+  border-radius:var(--r2);font-size:14px;letter-spacing:.02em;
+  transition:background .16s, border-color .16s;
+}
+.v3pro-explore-cta:hover {
+  background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.35);
+}
+.v3pro-feature-grid {
+  display:grid;grid-template-columns:repeat(4, 1fr);gap:14px;
+  margin-top:16px;border-top:1px solid rgba(255,255,255,.1);padding-top:22px;
+}
+.v3pro-feat-card {
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+  border-radius:var(--r2);padding:14px;display:flex;flex-direction:column;gap:6px;
+  transition:border-color .16s, background .16s;
+}
+.v3pro-feat-card:hover {
+  background:rgba(255,255,255,.07);border-color:color-mix(in srgb, var(--brass) 40%, transparent);
+}
+.v3pro-feat-head {
+  display:flex;align-items:baseline;gap:8px;
+}
+.v3pro-feat-num {
+  font-size:11px;font-weight:700;color:var(--brass);font-family:monospace;letter-spacing:.05em;
+}
+.v3pro-feat-head h5 {
+  font-size:13.5px;font-weight:700;margin:0;color:#FFFFFF;line-height:1.3;letter-spacing:-.01em;
+}
+.v3pro-feat-card p {
+  font-size:12px;line-height:1.5;color:var(--ink-text-2);margin:0;
+}
+@media (max-width: 1024px) {
+  .v3pro-feature-grid { grid-template-columns:repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .v3pro-feature-grid { grid-template-columns:1fr; }
+  .v3pro-hero-actions { flex-direction:column; align-items:stretch; }
+  .v3pro-play-cta, .v3pro-explore-cta { width:100%; justify-content:center; }
+  .v3pro-hero { padding:20px 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v3pro-play-cta, .v3pro-explore-cta, .v3pro-feat-card {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
 /* ----------------------------------------------------------- engine showcase */
 .forge-grid{
   display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:var(--s5)
@@ -1279,6 +1423,107 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
 
   <!-- ===================== HOME ===================== -->
   <section class="view" id="viewHome" aria-label="Home">
+
+    <!-- ======================= V3 PRO HERO BANNER ======================= -->
+    <section class="v3pro-hero" id="v3ProHero" aria-label="XO5 Forge V3 PRO Promotion">
+      <div class="v3pro-hero-glow" aria-hidden="true"></div>
+      <div class="v3pro-hero-glow blue" aria-hidden="true"></div>
+      <div class="v3pro-hero-inner">
+        <div class="v3pro-hero-badge-row">
+          <span class="v3pro-pill current"><span class="v3pro-dot current"></span>Current Generation</span>
+          <span class="v3pro-pill available"><span class="v3pro-dot available"></span>Available</span>
+        </div>
+        <div class="v3pro-hero-brand">
+          <img src="assets/forge-v3-pro.png" alt="XO5 Forge V3 PRO" class="v3pro-hero-logo" onerror="this.style.display='none'">
+          <div class="v3pro-hero-titles">
+            <p class="v3pro-eyebrow">THE NEW GENERATION OF THE XO5 ENGINE</p>
+            <h2 class="v3pro-title">XO5 FORGE V3 PRO</h2>
+          </div>
+        </div>
+        <div class="v3pro-feature-pills">
+          <span>PVS Search</span>
+          <span>&bull;</span>
+          <span>Aspiration Windows</span>
+          <span>&bull;</span>
+          <span>Advanced Threat Analysis</span>
+          <span>&bull;</span>
+          <span>Smarter Search</span>
+          <span>&bull;</span>
+          <span>Enhanced Transposition Tables</span>
+        </div>
+        <p class="v3pro-hero-desc">
+          Engineered for deeper tactical perception and search efficiency. Features Principal Variation Search, multi-generational transposition tables, history heuristics, and solver-grade VCF/VCT threat detection.
+        </p>
+        <div class="v3pro-hero-actions">
+          <button class="btn big onink v3pro-play-cta" id="heroPlayV3ProBtn">
+            <span class="cta-icon">&#9654;</span> PLAY WITH V3 PRO
+          </button>
+          <button class="btn big outline-ink v3pro-explore-cta" id="heroExploreBtn">
+            EXPLORE ENGINE &darr;
+          </button>
+        </div>
+
+        <!-- 8-Card Feature Highlights Grid -->
+        <div class="v3pro-feature-grid" id="v3ProFeatureGrid">
+          <div class="v3pro-feat-card">
+            <div class="v3pro-feat-head">
+              <span class="v3pro-feat-num">01</span>
+              <h5>Principal Variation Search</h5>
+            </div>
+            <p>Scouts non-PV candidate branches with narrow null windows, saving search effort and reserving full-width evaluations for verified improvements.</p>
+          </div>
+          <div class="v3pro-feat-card">
+            <div class="v3pro-feat-head">
+              <span class="v3pro-feat-num">02</span>
+              <h5>Aspiration Windows</h5>
+            </div>
+            <p>Searches within tight score brackets centered around previous iteration results to prune branches earlier during iterative deepening.</p>
+          </div>
+          <div class="v3pro-feat-card">
+            <div class="v3pro-feat-head">
+              <span class="v3pro-feat-num">03</span>
+              <h5>Advanced Move Ordering</h5>
+            </div>
+            <p>Combines PV priority, two-slot killer moves, opponent counter-move tables, and side-specific history heuristics to evaluate strong moves first.</p>
+          </div>
+          <div class="v3pro-feat-card">
+            <div class="v3pro-feat-head">
+              <span class="v3pro-feat-num">04</span>
+              <h5>Generational Transposition Tables</h5>
+            </div>
+            <p>Employs depth-priority and generation aging replacement schemes with secondary-hash validation to maximize cache efficiency and prevent collisions.</p>
+          </div>
+          <div class="v3pro-feat-card">
+            <div class="v3pro-feat-head">
+              <span class="v3pro-feat-num">05</span>
+              <h5>Enhanced Threat Analysis</h5>
+            </div>
+            <p>10-tier tactical pattern classification with defensive urgency scoring to evaluate four-threats, open threes, and complex double-threat combinations.</p>
+          </div>
+          <div class="v3pro-feat-card">
+            <div class="v3pro-feat-head">
+              <span class="v3pro-feat-num">06</span>
+              <h5>VCF / VCT Support</h5>
+            </div>
+            <p>Specialized solver probes for forced victory-by-continuous-four and continuous-threat lines, capable of finding forced mates before negamax search.</p>
+          </div>
+          <div class="v3pro-feat-card">
+            <div class="v3pro-feat-head">
+              <span class="v3pro-feat-num">07</span>
+              <h5>Tactical Verification</h5>
+            </div>
+            <p>Dual-phase pre-search tactical verification probes that instantly confirm winning lines, forced defensive blocks, and mitigate opponent forks.</p>
+          </div>
+          <div class="v3pro-feat-card">
+            <div class="v3pro-feat-head">
+              <span class="v3pro-feat-num">08</span>
+              <h5>9-Level Difficulty System</h5>
+            </div>
+            <p>Graded AI ladder from beginner-friendly exploratory play at Level 1 up to maximum tactical depth and unbounded calculation at Level 9.</p>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- ============================ HERO ============================ -->
     <div class="hero">
@@ -2101,7 +2346,7 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script id="engineSrc">
 /* ===========================================================
-   XO 5-in-a-Row Engine v2   (UI-independent, testable)
+   XO 5-in-a-Row Engine XO5 Forge v3   (UI-independent, testable)
    Player 1 = X (human, red).  Player 2 = O (AI, blue).
    Score sign inside search: negamax (side-to-move positive).
    Score sign exposed to UI: positive = good for O.
@@ -2347,7 +2592,7 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
       var bs = player === X ? state.lineX[id] : state.lineO[id];
       var bo = player === X ? state.lineO[id] : state.lineX[id];
       board[idx] = player; gs += scoreLine(id, player, board) - bs;
-      board[idx] = opp;    go += scoreLine(id, opp, board) - bo;
+      board[idx] = opp; go += scoreLine(id, opp, board) - bo;
       board[idx] = 0;
     }
     var cx = idx % SIZE, cy = (idx / SIZE) | 0;
@@ -2724,7 +2969,7 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
       if (a.idx === bestMove) return -1;
       if (b.idx === bestMove) return 1;
       return (rootScores[b.idx] == null ? b.score : rootScores[b.idx]) -
-             (rootScores[a.idx] == null ? a.score : rootScores[a.idx]);
+        (rootScores[a.idx] == null ? a.score : rootScores[a.idx]);
     });
     var iterScores = {};
     for (var i = 0; i < ordered.length; i++) {
@@ -2836,15 +3081,15 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
      non-critical move is deliberately sub-optimal ("noise"). Noise never
      fires when a real tactic (win/block) is on the board. */
   var LEVELS9 = {
-    1: { label: 'Beginner',          maxDepth: 1,  width: 4,  rootWidth: 5,  timeMs: 150,  noise: 0.55, vcf: false, vct: false, maxExt: 0 },
-    2: { label: 'Beginner',          maxDepth: 2,  width: 5,  rootWidth: 6,  timeMs: 200,  noise: 0.45, vcf: false, vct: false, maxExt: 0 },
-    3: { label: 'Easy',              maxDepth: 3,  width: 6,  rootWidth: 7,  timeMs: 300,  noise: 0.32, vcf: false, vct: false, maxExt: 1 },
-    4: { label: 'Lower Intermediate',maxDepth: 4,  width: 6,  rootWidth: 8,  timeMs: 450,  noise: 0.20, vcf: true,  vct: false, maxExt: 1 },
-    5: { label: 'Intermediate',      maxDepth: 5,  width: 7,  rootWidth: 9,  timeMs: 650,  noise: 0.10, vcf: true,  vct: false, maxExt: 2 },
-    6: { label: 'Strong Intermediate',maxDepth: 6, width: 8,  rootWidth: 10, timeMs: 900,  noise: 0.05, vcf: true,  vct: true,  maxExt: 2 },
-    7: { label: 'Advanced',          maxDepth: 8,  width: 9,  rootWidth: 11, timeMs: 1300, noise: 0.02, vcf: true,  vct: true,  maxExt: 3 },
-    8: { label: 'Very Strong',       maxDepth: 10, width: 10, rootWidth: 12, timeMs: 1800, noise: 0,    vcf: true,  vct: true,  maxExt: 3 },
-    9: { label: 'Maximum',           maxDepth: 14, width: 10, rootWidth: 14, timeMs: 2400, noise: 0,    vcf: true,  vct: true,  maxExt: 4 }
+    1: { label: 'Beginner', maxDepth: 1, width: 4, rootWidth: 5, timeMs: 150, noise: 0.55, vcf: false, vct: false, maxExt: 0 },
+    2: { label: 'Beginner', maxDepth: 2, width: 5, rootWidth: 6, timeMs: 200, noise: 0.45, vcf: false, vct: false, maxExt: 0 },
+    3: { label: 'Easy', maxDepth: 3, width: 6, rootWidth: 7, timeMs: 300, noise: 0.32, vcf: false, vct: false, maxExt: 1 },
+    4: { label: 'Lower Intermediate', maxDepth: 4, width: 6, rootWidth: 8, timeMs: 450, noise: 0.20, vcf: true, vct: false, maxExt: 1 },
+    5: { label: 'Intermediate', maxDepth: 5, width: 7, rootWidth: 9, timeMs: 650, noise: 0.10, vcf: true, vct: false, maxExt: 2 },
+    6: { label: 'Strong Intermediate', maxDepth: 6, width: 8, rootWidth: 10, timeMs: 900, noise: 0.05, vcf: true, vct: true, maxExt: 2 },
+    7: { label: 'Advanced', maxDepth: 8, width: 9, rootWidth: 11, timeMs: 1300, noise: 0.02, vcf: true, vct: true, maxExt: 3 },
+    8: { label: 'Very Strong', maxDepth: 10, width: 10, rootWidth: 12, timeMs: 1800, noise: 0, vcf: true, vct: true, maxExt: 3 },
+    9: { label: 'Maximum', maxDepth: 14, width: 10, rootWidth: 14, timeMs: 2400, noise: 0, vcf: true, vct: true, maxExt: 4 }
   };
   // legacy string aliases kept only so older callers/tests degrade sanely
   var LEVELS = { easy: LEVELS9[3], medium: LEVELS9[5], hard: LEVELS9[8] };
@@ -3635,13 +3880,21 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
     this.cutoffs = 0;
     this.stores = 0;
     this.replacements = 0;
+    this.key2Checks = 0;
+    this.key2Collisions = 0;
   }
   TT.prototype.get = function (key, key2) {
     this.probes++;
     var e = this.map.get(key);
     if (e) {
       /* PRO: collision verification with secondary hash */
-      if (key2 !== undefined && e.k2 !== key2) return undefined;
+      if (key2 !== undefined) {
+        this.key2Checks++;
+        if (e.k2 !== key2) {
+          this.key2Collisions++;
+          return undefined;
+        }
+      }
       this.hits++;
     }
     return e;
@@ -3716,9 +3969,15 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
     /* PRO: Counter-move heuristic */
     this.counterMove = [new Int32Array(LEN), new Int32Array(LEN)]; // [side-1][prevMove] -> bestReply
     /* PRO: PVS stats */
+    this.pvsSearches = 0;
     this.pvsResearches = 0;
     /* PRO: Aspiration stats */
+    this.aspirationSearches = 0;
     this.aspirationFails = 0;
+    /* PRO: Heuristic usage stats */
+    this.historyUsage = 0;
+    this.counterMoveUsage = 0;
+    this.tacticalProbes = 0;
     /* PRO: PV table for move ordering */
     this.pvTable = new Int32Array(64); // pvTable[ply] = best move at ply
     for (var i = 0; i < 64; i++) this.pvTable[i] = -1;
@@ -3816,9 +4075,12 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
         if (moveIdx === ttMove) moves[mi].score += 2e8;
         else if (moveIdx === pvMove) moves[mi].score += 1.5e8;
         else if (k && (moveIdx === k[0] || moveIdx === k[1])) moves[mi].score += 5e5;
-        else if (moveIdx === cm) moves[mi].score += 3e5;
+        else if (moveIdx === cm) { moves[mi].score += 3e5; this.counterMoveUsage++; }
         /* PRO: History heuristic bonus */
-        moves[mi].score += this.history[sideIdx][moveIdx] * 0.5;
+        if (this.history[sideIdx][moveIdx] > 0) {
+          moves[mi].score += this.history[sideIdx][moveIdx] * 0.5;
+          this.historyUsage++;
+        }
       }
       moves.sort(function (a, b) { return b.score - a.score; });
     }
@@ -3835,6 +4097,7 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
         v = -this.negamax(depth - 1, -beta, -alpha, opp, ply + 1, ext);
       } else {
         /* PVS: Null-window search for subsequent moves */
+        this.pvsSearches++;
         v = -this.negamax(depth - 1, -(alpha + 1), -alpha, opp, ply + 1, ext);
         if (v > alpha && v < beta && !this.aborted) {
           /* Re-search with full window */
@@ -3913,6 +4176,7 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
     // PRO: Enhanced VCF/VCT probe with higher limits
     var forcing = null;
     if (!theirs.length && this.opts.vcf !== false) {
+      this.tacticalProbes++;
       var probe = solveForcing(state, player, {
         maxPly: this.opts.vcfPly || 10,
         nodes: this.opts.vcfNodes || 20000,
@@ -3990,6 +4254,8 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
     var aspirationAttempts = 0;
 
     while (!searchComplete && aspirationAttempts < 4) {
+      aspirationAttempts++;
+      if (useAspiration) this.aspirationSearches++;
       localBest = -Infinity;
       localMove = this.bestMove;
       var allSearched = true;
@@ -4003,6 +4269,7 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
           v = -this.negamax(depth - 1, -beta, -alpha, opp, 1, 0);
         } else {
           /* PVS: Null-window search */
+          this.pvsSearches++;
           v = -this.negamax(depth - 1, -(alpha + 1), -alpha, opp, 1, 0);
           if (v > alpha && v < beta && !this.aborted) {
             this.pvsResearches++;
@@ -4082,8 +4349,15 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
     r.ttCutoffs = this.tt.cutoffs;
     r.ttStores = this.tt.stores;
     r.ttReplacements = this.tt.replacements;
+    r.pvsSearches = this.pvsSearches;
     r.pvsResearches = this.pvsResearches;
+    r.aspirationSearches = this.aspirationSearches;
     r.aspirationFails = this.aspirationFails;
+    r.historyUsage = this.historyUsage;
+    r.counterMoveUsage = this.counterMoveUsage;
+    r.tacticalProbes = this.tacticalProbes;
+    r.key2Checks = this.tt.key2Checks;
+    r.key2Collisions = this.tt.key2Collisions;
     r.stoppedByTime = this.deadline !== null && !!this.aborted;
     if (!r.candidates) r.candidates = [];
     if (!r.pv) r.pv = [r.idx];
@@ -4262,7 +4536,15 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
         depth: res.depth, nodes: res.nodes, timeMs: res.timeMs,
         ttHits: res.ttHits, ttProbes: res.ttProbes,
         ttCutoffs: res.ttCutoffs, ttStores: res.ttStores, ttReplacements: res.ttReplacements,
-        pvsResearches: res.pvsResearches, aspirationFails: res.aspirationFails,
+        pvsSearches: res.pvsSearches || 0,
+        pvsResearches: res.pvsResearches || 0,
+        aspirationSearches: res.aspirationSearches || 0,
+        aspirationFails: res.aspirationFails || 0,
+        historyUsage: res.historyUsage || 0,
+        counterMoveUsage: res.counterMoveUsage || 0,
+        tacticalProbes: res.tacticalProbes || 0,
+        key2Checks: res.key2Checks || 0,
+        key2Collisions: res.key2Collisions || 0,
         stoppedByTime: res.stoppedByTime,
         pv: res.pv, kind: res.kind,
         candidates: res.candidates.map(function (c) { return { idx: c.idx, score: c.score * flip }; }),
@@ -8573,6 +8855,28 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
     b.onclick = function () { goRoute(b.getAttribute('data-go')); };
   });
   $('brandBtn').onclick = function () { goRoute('home'); };
+
+  /* V3 PRO Hero Banner Interactive CTAs */
+  var playV3ProBtn = $('heroPlayV3ProBtn');
+  if (playV3ProBtn) {
+    playV3ProBtn.onclick = function () {
+      pendingGameEngineId = 'forge_v3_pro';
+      goRoute('play');
+      pendingGameEngineId = 'forge_v3_pro';
+      renderGameSetupEngineSelector();
+      setEngineBadge();
+    };
+  }
+  var heroExploreBtn = $('heroExploreBtn');
+  if (heroExploreBtn) {
+    heroExploreBtn.onclick = function () {
+      var target = $('v3ProFeatureGrid') || $('forgeHead');
+      if (target && typeof window.scrollTo === 'function') {
+        var top = (target.getBoundingClientRect().top || 0) + (window.pageYOffset || (document.documentElement && document.documentElement.scrollTop) || 0) - 70;
+        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+      }
+    };
+  }
 
   /* ---------------- mobile navigation drawer ---------------- */
   var topBar = $('topBar') || document.querySelector('header.top');

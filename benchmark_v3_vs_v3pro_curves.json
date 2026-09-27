@@ -1,0 +1,2052 @@
+{
+  "timestamp": "2026-09-27T05:02:57.343Z",
+  "budgets": [
+    100,
+    250,
+    500,
+    1000,
+    2000
+  ],
+  "seed": 12345,
+  "summary": {
+    "budgets": [
+      100,
+      250,
+      500,
+      1000,
+      2000
+    ],
+    "positions": 20,
+    "byBudget": [
+      {
+        "timeMs": 100,
+        "v3": {
+          "depth": {
+            "mean": 3.35,
+            "median": 3,
+            "max": 6
+          },
+          "nodes": {
+            "mean": 742.45,
+            "median": 0
+          },
+          "nps": 6620.45
+        },
+        "pro": {
+          "depth": {
+            "mean": 3.2,
+            "median": 3,
+            "max": 6
+          },
+          "nodes": {
+            "mean": 654.05,
+            "median": 0
+          },
+          "nps": 5981.25
+        }
+      },
+      {
+        "timeMs": 250,
+        "v3": {
+          "depth": {
+            "mean": 4,
+            "median": 3,
+            "max": 11
+          },
+          "nodes": {
+            "mean": 1557.3,
+            "median": 0
+          },
+          "nps": 5889.7
+        },
+        "pro": {
+          "depth": {
+            "mean": 3.8,
+            "median": 3,
+            "max": 11
+          },
+          "nodes": {
+            "mean": 1356.85,
+            "median": 0
+          },
+          "nps": 5180.05
+        }
+      },
+      {
+        "timeMs": 500,
+        "v3": {
+          "depth": {
+            "mean": 4.2,
+            "median": 3,
+            "max": 11
+          },
+          "nodes": {
+            "mean": 2918.45,
+            "median": 0
+          },
+          "nps": 5707
+        },
+        "pro": {
+          "depth": {
+            "mean": 4.15,
+            "median": 3,
+            "max": 11
+          },
+          "nodes": {
+            "mean": 2546.6,
+            "median": 0
+          },
+          "nps": 4998.9
+        }
+      },
+      {
+        "timeMs": 1000,
+        "v3": {
+          "depth": {
+            "mean": 4.55,
+            "median": 3,
+            "max": 11
+          },
+          "nodes": {
+            "mean": 5811.25,
+            "median": 0
+          },
+          "nps": 5769.15
+        },
+        "pro": {
+          "depth": {
+            "mean": 4.35,
+            "median": 3,
+            "max": 11
+          },
+          "nodes": {
+            "mean": 4940.85,
+            "median": 0
+          },
+          "nps": 4906.85
+        }
+      },
+      {
+        "timeMs": 2000,
+        "v3": {
+          "depth": {
+            "mean": 4.9,
+            "median": 3,
+            "max": 11
+          },
+          "nodes": {
+            "mean": 10951.8,
+            "median": 0
+          },
+          "nps": 5843.85
+        },
+        "pro": {
+          "depth": {
+            "mean": 4.55,
+            "median": 3,
+            "max": 11
+          },
+          "nodes": {
+            "mean": 9728.05,
+            "median": 0
+          },
+          "nps": 4869.45
+        }
+      }
+    ],
+    "scaling": {
+      "method": "ols of log10(depth) on log10(timeMs)",
+      "v3Slope": 0.12174771961885747,
+      "proSlope": 0.11537883999895986
+    },
+    "totals": {
+      "v3DepthSum": 420,
+      "proDepthSum": 401,
+      "v3NodesSum": 439625,
+      "proNodesSum": 384528
+    },
+    "depthGrowth": {
+      "fromMs": 100,
+      "toMs": 2000,
+      "v3Mean": 1.55,
+      "proMean": 1.35,
+      "paired": {
+        "n": 20,
+        "meanDiff": -0.2,
+        "sdDiff": 0.5231483637805969,
+        "stdErr": 0.11697953037312035,
+        "tStatistic": -1.7097008285302209,
+        "df": 19,
+        "pValue": 0.10360315910657203,
+        "tCritical": 2.0949999999999998,
+        "ci95Low": -0.4450721161316871,
+        "ci95High": 0.0450721161316871,
+        "cohensD": -0.38230072737812854,
+        "significant": false,
+        "significance": "n.s."
+      }
+    }
+  },
+  "curves": [
+    {
+      "position": "Opening 1: Hokuto Direct (H8, H9, I9)",
+      "category": "Opening",
+      "side": 2,
+      "moveCount": 3,
+      "points": [
+        {
+          "timeMs": 100,
+          "v3": {
+            "depth": 5,
+            "nodes": 2560,
+            "elapsedMs": 114,
+            "nps": 22456,
+            "best": "G9"
+          },
+          "pro": {
+            "depth": 4,
+            "nodes": 2048,
+            "elapsedMs": 101,
+            "nps": 20277,
+            "best": "F9"
+          }
+        },
+        {
+          "timeMs": 250,
+          "v3": {
+            "depth": 6,
+            "nodes": 5632,
+            "elapsedMs": 260,
+            "nps": 21662,
+            "best": "I8"
+          },
+          "pro": {
+            "depth": 5,
+            "nodes": 5120,
+            "elapsedMs": 263,
+            "nps": 19468,
+            "best": "G8"
+          }
+        },
+        {
+          "timeMs": 500,
+          "v3": {
+            "depth": 6,
+            "nodes": 10240,
+            "elapsedMs": 512,
+            "nps": 20000,
+            "best": "I8"
+          },
+          "pro": {
+            "depth": 6,
+            "nodes": 9728,
+            "elapsedMs": 520,
+            "nps": 18708,
+            "best": "G8"
+          }
+        },
+        {
+          "timeMs": 1000,
+          "v3": {
+            "depth": 7,
+            "nodes": 20992,
+            "elapsedMs": 1019,
+            "nps": 20601,
+            "best": "G9"
+          },
+          "pro": {
+            "depth": 6,
+            "nodes": 18432,
+            "elapsedMs": 1007,
+            "nps": 18304,
+            "best": "G8"
+          }
+        },
+        {
+          "timeMs": 2000,
+          "v3": {
+            "depth": 8,
+            "nodes": 40960,
+            "elapsedMs": 2018,
+            "nps": 20297,
+            "best": "I8"
+          },
+          "pro": {
+            "depth": 7,
+            "nodes": 36352,
+            "elapsedMs": 2019,
+            "nps": 18005,
+            "best": "J9"
+          }
+        }
+      ]
+    },
+    {
+      "position": "EM 1: Cross wing 8-ply (X to move)",
+      "category": "Early Midgame",
+      "side": 1,
+      "moveCount": 8,
+      "points": [
+        {
+          "timeMs": 100,
+          "v3": {
+            "depth": 5,
+            "nodes": 1536,
+            "elapsedMs": 112,
+            "nps": 13714,
+            "best": "G8"
+          },
+          "pro": {
+            "depth": 4,
+            "nodes": 1536,
+            "elapsedMs": 109,
+            "nps": 14092,
+            "best": "J10"
+          }
+        },
+        {
+          "timeMs": 250,
+          "v3": {
+            "depth": 6,
+            "nodes": 3584,
+            "elapsedMs": 260,
+            "nps": 13785,
+            "best": "G8"
+          },
+          "pro": {
+            "depth": 5,
+            "nodes": 3072,
+            "elapsedMs": 256,
+            "nps": 12000,
+            "best": "G8"
+          }
+        },
+        {
+          "timeMs": 500,
+          "v3": {
+            "depth": 7,
+            "nodes": 6656,
+            "elapsedMs": 511,
+            "nps": 13025,
+            "best": "G8"
+          },
+          "pro": {
+            "depth": 6,
+            "nodes": 6656,
+            "elapsedMs": 518,
+            "nps": 12849,
+            "best": "I9"
+          }
+        },
+        {
+          "timeMs": 1000,
+          "v3": {
+            "depth": 8,
+            "nodes": 12800,
+            "elapsedMs": 1018,
+            "nps": 12574,
+            "best": "G8"
+          },
+          "pro": {
+            "depth": 7,
+            "nodes": 12288,
+            "elapsedMs": 1028,
+            "nps": 11953,
+            "best": "G6"
+          }
+        },
+        {
+          "timeMs": 2000,
+          "v3": {
+            "depth": 9,
+            "nodes": 28672,
+            "elapsedMs": 2033,
+            "nps": 14103,
+            "best": "G8"
+          },
+          "pro": {
+            "depth": 8,
+            "nodes": 25600,
+            "elapsedMs": 2016,
+            "nps": 12698,
+            "best": "H9"
+          }
+        }
+      ]
+    },
+    {
+      "position": "CM 1: Cross interlocking 12-ply (X to move)",
+      "category": "Complex Midgame",
+      "side": 1,
+      "moveCount": 12,
+      "points": [
+        {
+          "timeMs": 100,
+          "v3": {
+            "depth": 5,
+            "nodes": 1536,
+            "elapsedMs": 126,
+            "nps": 12190,
+            "best": "H7"
+          },
+          "pro": {
+            "depth": 5,
+            "nodes": 1393,
+            "elapsedMs": 114,
+            "nps": 12219,
+            "best": "G8"
+          }
+        },
+        {
+          "timeMs": 250,
+          "v3": {
+            "depth": 11,
+            "nodes": 0,
+            "elapsedMs": 41,
+            "nps": 0,
+            "best": "G8"
+          },
+          "pro": {
+            "depth": 11,
+            "nodes": 0,
+            "elapsedMs": 66,
+            "nps": 0,
+            "best": "G8"
+          }
+        },
+        {
+          "timeMs": 500,
+          "v3": {
+            "depth": 11,
+            "nodes": 0,
+            "elapsedMs": 44,
+            "nps": 0,
+            "best": "G8"
+          },
+          "pro": {
+            "depth": 11,
+            "nodes": 0,
+            "elapsedMs": 69,
+            "nps": 0,
+            "best": "G8"
+          }
+        },
+        {
+          "timeMs": 1000,
+          "v3": {
+            "depth": 11,
+            "nodes": 0,
+            "elapsedMs": 41,
+            "nps": 0,
+            "best": "G8"
+          },
+          "pro": {
+            "depth": 11,
+            "nodes": 0,
+            "elapsedMs": 70,
+            "nps": 0,
+            "best": "G8"
+          }
+        },
+        {
+          "timeMs": 2000,
+          "v3": {
+            "depth": 11,
+            "nodes": 0,
+            "elapsedMs": 45,
+            "nps": 0,
+            "best": "G8"
+          },
+          "pro": {
+            "depth": 11,
+            "nodes": 0,
+            "elapsedMs": 65,
+            "nps": 0,
+            "best": "G8"
+          }
+        }
+      ]
+    },
+    {
+      "position": "Tac 1: X horizontal 4 win (2,7 or 7,7)",
+      "category": "Tactical",
+      "side": 1,
+      "moveCount": 8,
+      "points": [
+        {
+          "timeMs": 100,
+          "v3": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "C8"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "C8"
+          }
+        },
+        {
+          "timeMs": 250,
+          "v3": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "C8"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "C8"
+          }
+        },
+        {
+          "timeMs": 500,
+          "v3": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "C8"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "C8"
+          }
+        },
+        {
+          "timeMs": 1000,
+          "v3": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "C8"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "C8"
+          }
+        },
+        {
+          "timeMs": 2000,
+          "v3": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "C8"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "C8"
+          }
+        }
+      ]
+    },
+    {
+      "position": "Block 1: X blocks O horizontal 4 (2,7 or 7,7)",
+      "category": "Blocking",
+      "side": 1,
+      "moveCount": 8,
+      "points": [
+        {
+          "timeMs": 100,
+          "v3": {
+            "depth": 1,
+            "nodes": 1,
+            "elapsedMs": 1,
+            "nps": 1000,
+            "best": "C8"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 1,
+            "elapsedMs": 1,
+            "nps": 1000,
+            "best": "C8"
+          }
+        },
+        {
+          "timeMs": 250,
+          "v3": {
+            "depth": 1,
+            "nodes": 1,
+            "elapsedMs": 1,
+            "nps": 1000,
+            "best": "C8"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 1,
+            "elapsedMs": 1,
+            "nps": 1000,
+            "best": "C8"
+          }
+        },
+        {
+          "timeMs": 500,
+          "v3": {
+            "depth": 1,
+            "nodes": 1,
+            "elapsedMs": 1,
+            "nps": 1000,
+            "best": "C8"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 1,
+            "elapsedMs": 1,
+            "nps": 1000,
+            "best": "C8"
+          }
+        },
+        {
+          "timeMs": 1000,
+          "v3": {
+            "depth": 1,
+            "nodes": 1,
+            "elapsedMs": 1,
+            "nps": 1000,
+            "best": "C8"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 1,
+            "elapsedMs": 1,
+            "nps": 1000,
+            "best": "C8"
+          }
+        },
+        {
+          "timeMs": 2000,
+          "v3": {
+            "depth": 1,
+            "nodes": 1,
+            "elapsedMs": 1,
+            "nps": 1000,
+            "best": "C8"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 1,
+            "elapsedMs": 1,
+            "nps": 1000,
+            "best": "C8"
+          }
+        }
+      ]
+    },
+    {
+      "position": "Def 1: O answers X open three (3,7 or 7,7)",
+      "category": "Defensive",
+      "side": 2,
+      "moveCount": 5,
+      "points": [
+        {
+          "timeMs": 100,
+          "v3": {
+            "depth": 5,
+            "nodes": 2048,
+            "elapsedMs": 104,
+            "nps": 19692,
+            "best": "H8"
+          },
+          "pro": {
+            "depth": 6,
+            "nodes": 2048,
+            "elapsedMs": 132,
+            "nps": 15515,
+            "best": "D8"
+          }
+        },
+        {
+          "timeMs": 250,
+          "v3": {
+            "depth": 6,
+            "nodes": 5120,
+            "elapsedMs": 276,
+            "nps": 18551,
+            "best": "H8"
+          },
+          "pro": {
+            "depth": 6,
+            "nodes": 4608,
+            "elapsedMs": 277,
+            "nps": 16635,
+            "best": "D8"
+          }
+        },
+        {
+          "timeMs": 500,
+          "v3": {
+            "depth": 7,
+            "nodes": 9728,
+            "elapsedMs": 524,
+            "nps": 18565,
+            "best": "H8"
+          },
+          "pro": {
+            "depth": 8,
+            "nodes": 8192,
+            "elapsedMs": 509,
+            "nps": 16094,
+            "best": "H8"
+          }
+        },
+        {
+          "timeMs": 1000,
+          "v3": {
+            "depth": 7,
+            "nodes": 19456,
+            "elapsedMs": 1021,
+            "nps": 19056,
+            "best": "H8"
+          },
+          "pro": {
+            "depth": 8,
+            "nodes": 15872,
+            "elapsedMs": 1014,
+            "nps": 15653,
+            "best": "H8"
+          }
+        },
+        {
+          "timeMs": 2000,
+          "v3": {
+            "depth": 8,
+            "nodes": 37376,
+            "elapsedMs": 2032,
+            "nps": 18394,
+            "best": "H8"
+          },
+          "pro": {
+            "depth": 8,
+            "nodes": 30720,
+            "elapsedMs": 2017,
+            "nps": 15231,
+            "best": "H8"
+          }
+        }
+      ]
+    },
+    {
+      "position": "Fork 1: X creates four-three fork at (7,7)",
+      "category": "Double-threat / fork",
+      "side": 1,
+      "moveCount": 8,
+      "points": [
+        {
+          "timeMs": 100,
+          "v3": {
+            "depth": 6,
+            "nodes": 1536,
+            "elapsedMs": 109,
+            "nps": 14092,
+            "best": "A12"
+          },
+          "pro": {
+            "depth": 5,
+            "nodes": 1024,
+            "elapsedMs": 103,
+            "nps": 9942,
+            "best": "A10"
+          }
+        },
+        {
+          "timeMs": 250,
+          "v3": {
+            "depth": 6,
+            "nodes": 4096,
+            "elapsedMs": 267,
+            "nps": 15341,
+            "best": "A12"
+          },
+          "pro": {
+            "depth": 6,
+            "nodes": 3072,
+            "elapsedMs": 287,
+            "nps": 10704,
+            "best": "A10"
+          }
+        },
+        {
+          "timeMs": 500,
+          "v3": {
+            "depth": 7,
+            "nodes": 8192,
+            "elapsedMs": 531,
+            "nps": 15427,
+            "best": "A12"
+          },
+          "pro": {
+            "depth": 7,
+            "nodes": 4851,
+            "elapsedMs": 508,
+            "nps": 9549,
+            "best": "A14"
+          }
+        },
+        {
+          "timeMs": 1000,
+          "v3": {
+            "depth": 8,
+            "nodes": 15872,
+            "elapsedMs": 1001,
+            "nps": 15856,
+            "best": "A12"
+          },
+          "pro": {
+            "depth": 8,
+            "nodes": 10240,
+            "elapsedMs": 1033,
+            "nps": 9913,
+            "best": "A12"
+          }
+        },
+        {
+          "timeMs": 2000,
+          "v3": {
+            "depth": 9,
+            "nodes": 16795,
+            "elapsedMs": 1054,
+            "nps": 15935,
+            "best": "A12"
+          },
+          "pro": {
+            "depth": 8,
+            "nodes": 19456,
+            "elapsedMs": 2009,
+            "nps": 9684,
+            "best": "A12"
+          }
+        }
+      ]
+    },
+    {
+      "position": "VCF 1: Two consecutive fours (X to move)",
+      "category": "VCF",
+      "side": 1,
+      "moveCount": 10,
+      "points": [
+        {
+          "timeMs": 100,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "H9"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "H9"
+          }
+        },
+        {
+          "timeMs": 250,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "H9"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "H9"
+          }
+        },
+        {
+          "timeMs": 500,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "H9"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "H9"
+          }
+        },
+        {
+          "timeMs": 1000,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "H9"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "H9"
+          }
+        },
+        {
+          "timeMs": 2000,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "H9"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "H9"
+          }
+        }
+      ]
+    },
+    {
+      "position": "VCT 1: Two open threes forcing sequence (X to move)",
+      "category": "VCT",
+      "side": 1,
+      "moveCount": 12,
+      "points": [
+        {
+          "timeMs": 100,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          }
+        },
+        {
+          "timeMs": 250,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          }
+        },
+        {
+          "timeMs": 500,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          }
+        },
+        {
+          "timeMs": 1000,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 2,
+            "nps": 0,
+            "best": "D8"
+          }
+        },
+        {
+          "timeMs": 2000,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          }
+        }
+      ]
+    },
+    {
+      "position": "Endgame 1: Dense cluster 16-ply (X to move)",
+      "category": "Endgame",
+      "side": 1,
+      "moveCount": 16,
+      "points": [
+        {
+          "timeMs": 100,
+          "v3": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "G10"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "G10"
+          }
+        },
+        {
+          "timeMs": 250,
+          "v3": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "G10"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "G10"
+          }
+        },
+        {
+          "timeMs": 500,
+          "v3": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "G10"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "G10"
+          }
+        },
+        {
+          "timeMs": 1000,
+          "v3": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "G10"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "G10"
+          }
+        },
+        {
+          "timeMs": 2000,
+          "v3": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "G10"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "G10"
+          }
+        }
+      ]
+    },
+    {
+      "position": "Quiet 1: Balanced center development 8-ply (X to move)",
+      "category": "Quiet positional",
+      "side": 1,
+      "moveCount": 8,
+      "points": [
+        {
+          "timeMs": 100,
+          "v3": {
+            "depth": 5,
+            "nodes": 1536,
+            "elapsedMs": 112,
+            "nps": 13714,
+            "best": "I10"
+          },
+          "pro": {
+            "depth": 5,
+            "nodes": 1536,
+            "elapsedMs": 119,
+            "nps": 12908,
+            "best": "I10"
+          }
+        },
+        {
+          "timeMs": 250,
+          "v3": {
+            "depth": 7,
+            "nodes": 3497,
+            "elapsedMs": 257,
+            "nps": 13607,
+            "best": "I6"
+          },
+          "pro": {
+            "depth": 6,
+            "nodes": 3072,
+            "elapsedMs": 266,
+            "nps": 11549,
+            "best": "I6"
+          }
+        },
+        {
+          "timeMs": 500,
+          "v3": {
+            "depth": 7,
+            "nodes": 6656,
+            "elapsedMs": 515,
+            "nps": 12924,
+            "best": "I6"
+          },
+          "pro": {
+            "depth": 7,
+            "nodes": 5632,
+            "elapsedMs": 512,
+            "nps": 11000,
+            "best": "I10"
+          }
+        },
+        {
+          "timeMs": 1000,
+          "v3": {
+            "depth": 9,
+            "nodes": 13824,
+            "elapsedMs": 1025,
+            "nps": 13487,
+            "best": "I10"
+          },
+          "pro": {
+            "depth": 8,
+            "nodes": 11776,
+            "elapsedMs": 1021,
+            "nps": 11534,
+            "best": "I10"
+          }
+        },
+        {
+          "timeMs": 2000,
+          "v3": {
+            "depth": 10,
+            "nodes": 28672,
+            "elapsedMs": 2009,
+            "nps": 14272,
+            "best": "I10"
+          },
+          "pro": {
+            "depth": 8,
+            "nodes": 22528,
+            "elapsedMs": 2013,
+            "nps": 11191,
+            "best": "I10"
+          }
+        }
+      ]
+    },
+    {
+      "position": "Edge 1: Upper-left corner approach 8-ply (X to move)",
+      "category": "Edge/corner",
+      "side": 1,
+      "moveCount": 8,
+      "points": [
+        {
+          "timeMs": 100,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D14"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D14"
+          }
+        },
+        {
+          "timeMs": 250,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D14"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D14"
+          }
+        },
+        {
+          "timeMs": 500,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D14"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D14"
+          }
+        },
+        {
+          "timeMs": 1000,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D14"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D14"
+          }
+        },
+        {
+          "timeMs": 2000,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D14"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D14"
+          }
+        }
+      ]
+    },
+    {
+      "position": "VCF Adv 1: Triple consecutive four sequence (X to move)",
+      "category": "VCF Advanced",
+      "side": 1,
+      "moveCount": 12,
+      "points": [
+        {
+          "timeMs": 100,
+          "v3": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          }
+        },
+        {
+          "timeMs": 250,
+          "v3": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          }
+        },
+        {
+          "timeMs": 500,
+          "v3": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          }
+        },
+        {
+          "timeMs": 1000,
+          "v3": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          }
+        },
+        {
+          "timeMs": 2000,
+          "v3": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          }
+        }
+      ]
+    },
+    {
+      "position": "VCT Adv 1: Extended open three chain (X to move)",
+      "category": "VCT Advanced",
+      "side": 1,
+      "moveCount": 11,
+      "points": [
+        {
+          "timeMs": 100,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 2,
+            "nps": 0,
+            "best": "D8"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          }
+        },
+        {
+          "timeMs": 250,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          }
+        },
+        {
+          "timeMs": 500,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          }
+        },
+        {
+          "timeMs": 1000,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          }
+        },
+        {
+          "timeMs": 2000,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          }
+        }
+      ]
+    },
+    {
+      "position": "DTC 1: Four-three fork with secondary threat (X to move)",
+      "category": "Double Threat Complex",
+      "side": 1,
+      "moveCount": 9,
+      "points": [
+        {
+          "timeMs": 100,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "H11"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "H11"
+          }
+        },
+        {
+          "timeMs": 250,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 2,
+            "nps": 0,
+            "best": "H11"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "H11"
+          }
+        },
+        {
+          "timeMs": 500,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "H11"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "H11"
+          }
+        },
+        {
+          "timeMs": 1000,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "H11"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "H11"
+          }
+        },
+        {
+          "timeMs": 2000,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "H11"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "H11"
+          }
+        }
+      ]
+    },
+    {
+      "position": "TP 1: X horizontal 4 with double gap (5,7 or 7,7 or 8,7)",
+      "category": "Tactical Patterns",
+      "side": 1,
+      "moveCount": 7,
+      "points": [
+        {
+          "timeMs": 100,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "F8"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "F8"
+          }
+        },
+        {
+          "timeMs": 250,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "F8"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "F8"
+          }
+        },
+        {
+          "timeMs": 500,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "F8"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "F8"
+          }
+        },
+        {
+          "timeMs": 1000,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "F8"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "F8"
+          }
+        },
+        {
+          "timeMs": 2000,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "F8"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "F8"
+          }
+        }
+      ]
+    },
+    {
+      "position": "Edge Adv 1: Upper-left corner 12-ply battle (X to move)",
+      "category": "Edge/corner Advanced",
+      "side": 1,
+      "moveCount": 11,
+      "points": [
+        {
+          "timeMs": 100,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "C14"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "C14"
+          }
+        },
+        {
+          "timeMs": 250,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "C14"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "C14"
+          }
+        },
+        {
+          "timeMs": 500,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "C14"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "C14"
+          }
+        },
+        {
+          "timeMs": 1000,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "C14"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "C14"
+          }
+        },
+        {
+          "timeMs": 2000,
+          "v3": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "C14"
+          },
+          "pro": {
+            "depth": 3,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "C14"
+          }
+        }
+      ]
+    },
+    {
+      "position": "Endgame Adv 1: Dense cluster 22-ply (X to move)",
+      "category": "Endgame Advanced",
+      "side": 1,
+      "moveCount": 20,
+      "points": [
+        {
+          "timeMs": 100,
+          "v3": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          }
+        },
+        {
+          "timeMs": 250,
+          "v3": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          }
+        },
+        {
+          "timeMs": 500,
+          "v3": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          }
+        },
+        {
+          "timeMs": 1000,
+          "v3": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          }
+        },
+        {
+          "timeMs": 2000,
+          "v3": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          },
+          "pro": {
+            "depth": 1,
+            "nodes": 0,
+            "elapsedMs": 1,
+            "nps": 0,
+            "best": "D8"
+          }
+        }
+      ]
+    },
+    {
+      "position": "Opening 2: Matsu Direct (H8, H9, I8)",
+      "category": "Opening",
+      "side": 2,
+      "moveCount": 3,
+      "points": [
+        {
+          "timeMs": 100,
+          "v3": {
+            "depth": 5,
+            "nodes": 2560,
+            "elapsedMs": 111,
+            "nps": 23063,
+            "best": "G8"
+          },
+          "pro": {
+            "depth": 5,
+            "nodes": 2471,
+            "elapsedMs": 105,
+            "nps": 23533,
+            "best": "I9"
+          }
+        },
+        {
+          "timeMs": 250,
+          "v3": {
+            "depth": 6,
+            "nodes": 6144,
+            "elapsedMs": 275,
+            "nps": 22342,
+            "best": "J8"
+          },
+          "pro": {
+            "depth": 6,
+            "nodes": 5632,
+            "elapsedMs": 255,
+            "nps": 22086,
+            "best": "F7"
+          }
+        },
+        {
+          "timeMs": 500,
+          "v3": {
+            "depth": 6,
+            "nodes": 11264,
+            "elapsedMs": 513,
+            "nps": 21957,
+            "best": "J8"
+          },
+          "pro": {
+            "depth": 6,
+            "nodes": 10752,
+            "elapsedMs": 523,
+            "nps": 20558,
+            "best": "F7"
+          }
+        },
+        {
+          "timeMs": 1000,
+          "v3": {
+            "depth": 7,
+            "nodes": 20992,
+            "elapsedMs": 1001,
+            "nps": 20971,
+            "best": "G8"
+          },
+          "pro": {
+            "depth": 6,
+            "nodes": 19968,
+            "elapsedMs": 1009,
+            "nps": 19790,
+            "best": "F7"
+          }
+        },
+        {
+          "timeMs": 2000,
+          "v3": {
+            "depth": 8,
+            "nodes": 39936,
+            "elapsedMs": 2019,
+            "nps": 19780,
+            "best": "G8"
+          },
+          "pro": {
+            "depth": 7,
+            "nodes": 37888,
+            "elapsedMs": 2034,
+            "nps": 18627,
+            "best": "G7"
+          }
+        }
+      ]
+    },
+    {
+      "position": "EM 2: Cross wing 8-ply (O to move)",
+      "category": "Early Midgame",
+      "side": 2,
+      "moveCount": 9,
+      "points": [
+        {
+          "timeMs": 100,
+          "v3": {
+            "depth": 5,
+            "nodes": 1536,
+            "elapsedMs": 123,
+            "nps": 12488,
+            "best": "H6"
+          },
+          "pro": {
+            "depth": 4,
+            "nodes": 1024,
+            "elapsedMs": 101,
+            "nps": 10139,
+            "best": "H6"
+          }
+        },
+        {
+          "timeMs": 250,
+          "v3": {
+            "depth": 6,
+            "nodes": 3072,
+            "elapsedMs": 267,
+            "nps": 11506,
+            "best": "J7"
+          },
+          "pro": {
+            "depth": 5,
+            "nodes": 2560,
+            "elapsedMs": 252,
+            "nps": 10159,
+            "best": "J7"
+          }
+        },
+        {
+          "timeMs": 500,
+          "v3": {
+            "depth": 7,
+            "nodes": 5632,
+            "elapsedMs": 501,
+            "nps": 11242,
+            "best": "J7"
+          },
+          "pro": {
+            "depth": 6,
+            "nodes": 5120,
+            "elapsedMs": 501,
+            "nps": 10220,
+            "best": "I9"
+          }
+        },
+        {
+          "timeMs": 1000,
+          "v3": {
+            "depth": 8,
+            "nodes": 12288,
+            "elapsedMs": 1038,
+            "nps": 11838,
+            "best": "J7"
+          },
+          "pro": {
+            "depth": 7,
+            "nodes": 10240,
+            "elapsedMs": 1025,
+            "nps": 9990,
+            "best": "J5"
+          }
+        },
+        {
+          "timeMs": 2000,
+          "v3": {
+            "depth": 9,
+            "nodes": 26624,
+            "elapsedMs": 2033,
+            "nps": 13096,
+            "best": "J7"
+          },
+          "pro": {
+            "depth": 8,
+            "nodes": 22016,
+            "elapsedMs": 2010,
+            "nps": 10953,
+            "best": "K9"
+          }
+        }
+      ]
+    }
+  ]
+}
