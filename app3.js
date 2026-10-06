@@ -21,7 +21,6 @@
   'use strict';
 
   var E = window.XOEngine;
-  var EPro = window.XOEnginePro;
   var SIZE = E.SIZE, LEN = E.LEN, X = E.X, O = E.O;
   var COLS = 'ABCDEFGHIJKLMNO';
   var $ = function (id) { return document.getElementById(id); };
@@ -58,44 +57,31 @@
       id: 'forge_v3_pro',
       name: 'XO5 Forge V3 PRO',
       version: 'V3 PRO',
-      generation: 'Current Generation',
-      status: 'available',
-      description: 'Advanced PVS search · Improved TT · Enhanced threat analysis · Stronger VCF/VCT',
-      descLong: 'The current engine powering XO5. Built on the V3 architecture and upgraded with stronger search, tactical analysis, and verification.',
+      generation: 'Support Suspended',
+      status: 'suspended',
+      description: 'Temporarily unavailable while support is suspended. XO5 currently uses V3 for all engine features.',
+      descLong: 'Support for V3 PRO is temporarily suspended. All game, analysis, and puzzle engine features currently use XO5 Forge V3.',
       logo: 'assets/forge-v3-pro.png',
-      engineObj: 'XOEnginePro',
-      workerObj: 'XOEnginePro',
+      engineObj: null,
+      workerObj: null,
       capabilities: {
-        analysis: true,
-        candidates: true,
-        pv: true,
-        forcingSolver: true,
-        puzzles: true,
-        realtimeEval: true
+        analysis: false,
+        candidates: false,
+        pv: false,
+        forcingSolver: false,
+        puzzles: false,
+        realtimeEval: false
       },
-      features: [
-        'Advanced PVS Search',
-        'Aspiration Windows',
-        'Improved Transposition Table',
-        'History Heuristic',
-        'Counter-Move Heuristic',
-        'Enhanced Move Ordering',
-        'Advanced Threat Analysis',
-        'Stronger VCF/VCT',
-        'Tactical Verification',
-        'Improved Evaluation',
-        'Deterministic Benchmarking',
-        'Browser-first Performance'
-      ]
+      features: []
     },
     forge_v3: {
       id: 'forge_v3',
       name: 'XO5 Forge V3',
       version: 'V3',
-      generation: 'Previous Generation',
+      generation: 'Current Engine',
       status: 'available',
       description: 'Incremental evaluation · Alpha-beta search · Tactical search · VCF/VCT',
-      descLong: 'Stable previous-generation engine. Reliable alpha-beta search with iterative deepening.',
+      descLong: 'The active XO5 engine for gameplay, analysis and puzzle features. Reliable alpha-beta search with iterative deepening.',
       logo: 'assets/forge-v3.png',
       engineObj: 'XOEngine',
       workerObj: 'XOEngine',
@@ -158,7 +144,7 @@
     }
   };
 
-  var ENGINE_DEFAULT = 'forge_v3_pro';
+  var ENGINE_DEFAULT = 'forge_v3';
   var ENGINE_STORAGE_KEY = 'xo5.selectedEngine3';
   var currentEngineId = load(ENGINE_STORAGE_KEY, ENGINE_DEFAULT);
   /* currentGameEngineId: the engine that the RUNNING game actually uses.
@@ -175,19 +161,13 @@
     return getEngine(currentEngineId);
   }
 
-  /* The engine object for the RUNNING game (E or EPro). */
+  /* V3 is the only engine available to the application. */
   function getGameEngineObj() {
-    var eng = getEngine(currentGameEngineId);
-    if (!eng) return E;
-    if (eng.engineObj === 'XOEnginePro' && EPro) return EPro;
     return E;
   }
 
-  /* The engine used for analysis (follows default, not game engine). */
+  /* Analysis uses the same supported V3 engine as gameplay. */
   function getAnalysisEngineObj() {
-    var eng = getCurrentEngine();
-    if (!eng) return E;
-    if (eng.engineObj === 'XOEnginePro' && EPro) return EPro;
     return E;
   }
 
@@ -460,9 +440,9 @@
     var logoPath = eng && eng.logo ? eng.logo : '';
     var html = '';
     if (logoPath) {
-      html += '<img src="' + logoPath + '" alt="' + (eng ? eng.name : 'XO5 Forge V3 PRO') + ' logo" class="engine-badge-logo" onerror="this.style.display=\'none\'"> ';
+      html += '<img src="' + logoPath + '" alt="' + (eng ? eng.name : 'XO5 Forge V3') + ' logo" class="engine-badge-logo" onerror="this.style.display=\'none\'"> ';
     }
-    html += (eng ? eng.name : 'XO5 Forge V3 PRO') + ' · ' + mode;
+    html += (eng ? eng.name : 'XO5 Forge V3') + ' · ' + mode;
     b.innerHTML = html;
   }
 
@@ -2152,7 +2132,6 @@
     var wrkEl = $('workerSrc'); if (!wrkEl) return null;
     var host = {
       XOEngine: (typeof XOEngine !== 'undefined' ? XOEngine : E),
-      XOEnginePro: (typeof XOEnginePro !== 'undefined' ? XOEnginePro : ((typeof window !== 'undefined' && window.XOEnginePro) || E)),
       GEN_SLICE_MS: 12,                       // short slices: this is the UI thread
       postMessage: function (m) { onMessage({ data: m }); }
     };
@@ -3230,9 +3209,10 @@
       var isAvailable = eng.status === 'available';
       var isSelected = currentEngineId === id;
       var isGameEngine = currentGameEngineId === id;
-      var statusClass = isAvailable ? 'engine-status-available' : 'engine-status-coming-soon';
+      var isSuspended = eng.status === 'suspended';
+      var statusClass = isAvailable ? 'engine-status-available' : isSuspended ? 'engine-status-suspended' : 'engine-status-coming-soon';
       var generationText = eng.generation || (isAvailable ? 'Available' : 'Coming Soon');
-      var statusText = isAvailable ? ('● ' + generationText) : '🔒 Coming Soon';
+      var statusText = isAvailable ? ('● ' + generationText) : isSuspended ? 'Support Suspended' : 'Coming Soon';
       var cardClass = 'engine-card';
       if (!isAvailable) cardClass += ' engine-card-disabled';
       if (isSelected) cardClass += ' engine-card-selected';
@@ -3273,7 +3253,8 @@
         card.onclick = function () {
           var id = this.dataset.engine;
           if (!isEngineAvailable(id)) {
-            toast(ENGINE_REGISTRY[id].name + ' is coming soon.');
+            var unavailable = ENGINE_REGISTRY[id];
+            toast(unavailable.name + (unavailable.status === 'suspended' ? ' support is temporarily suspended.' : ' is coming soon.'));
             return;
           }
           if (switchEngine(id)) {
@@ -3306,7 +3287,7 @@
       if (isAvailable) {
         html += '<span class="sec-desc">' + (eng.description || '') + '</span>';
       } else {
-        html += '<span class="sec-desc sec-desc-soon">Coming Soon</span>';
+        html += '<span class="sec-desc ' + (eng.status === 'suspended' ? 'sec-desc-suspended' : 'sec-desc-soon') + '">' + (eng.status === 'suspended' ? 'Support Suspended' : 'Coming Soon') + '</span>';
       }
       html += '</div>';
       if (isSelected) html += '<span class="sec-check" aria-hidden="true">✓</span>';
@@ -3461,17 +3442,7 @@
   });
   $('brandBtn').onclick = function () { goRoute('home'); };
 
-  /* V3 PRO Hero Banner Interactive CTAs */
-  var playV3ProBtn = $('heroPlayV3ProBtn');
-  if (playV3ProBtn) {
-    playV3ProBtn.onclick = function () {
-      pendingGameEngineId = 'forge_v3_pro';
-      goRoute('play');
-      pendingGameEngineId = 'forge_v3_pro';
-      renderGameSetupEngineSelector();
-      setEngineBadge();
-    };
-  }
+  /* V3 PRO is suspended; its homepage action is intentionally unavailable. */
   var heroExploreBtn = $('heroExploreBtn');
   if (heroExploreBtn) {
     heroExploreBtn.onclick = function () {

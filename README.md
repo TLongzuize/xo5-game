@@ -1,11 +1,11 @@
 # 🔴🔵 XO 5-in-a-Row
 
-> **A modern, responsive 15×15 XO web game powered by a choice of two 9-level engines — XO5 Forge V3 (original) and XO5 Forge V3 PRO (enhanced with PVS, aspiration windows, improved transposition table, and tactical verification) — real-time evaluation analysis, and solver-verified tactical puzzles.**
+> **A modern, responsive 15×15 XO web game powered by XO5 Forge V3, with nine AI levels, real-time position analysis, and solver-verified tactical puzzles. V3 PRO support is temporarily suspended and it is unavailable in the UI.**
 
 [![Play on Vercel](https://img.shields.io/badge/Play_Live-xo5.vercel.app-blue?style=for-the-badge&logo=vercel)](https://xo5.vercel.app)
 [![GitHub Pages](https://img.shields.io/badge/GitHub_Pages-Play_Online-darkgreen?style=for-the-badge&logo=github)](https://tlongzuize.github.io/xo5-game/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-735%20passing-brightgreen?style=for-the-badge&logo=pytest)](https://github.com/TLongzuize/xo5-game)
+[![UI Tests](https://img.shields.io/badge/UI%20Tests-432%20passing-brightgreen?style=for-the-badge&logo=pytest)](https://github.com/TLongzuize/xo5-game)
 
 ---
 
@@ -13,9 +13,8 @@
 
 - 🤖 **9 AI Levels to Play Against:**
   - Alpha-Beta pruning with iterative deepening, from Beginner to Maximum.
-  - **Dual-engine architecture:** choose between **XO5 Forge V3** (the original) and **XO5 Forge V3 PRO** (the current-generation enhanced engine).
-    - **V3** — classic Alpha-Beta search with transposition table and Zobrist hashing.
-    - **V3 PRO** — upgraded with Principal Variation Search (PVS/NegaScout), aspiration windows, history & counter-move heuristics, a generational-depth-preferred transposition table, stronger threat analysis, and a pre-move `tacticalVerify` pass.
+  - **XO5 Forge V3** is the only engine currently available to gameplay, analysis, and puzzle features.
+  - **V3 PRO support is temporarily suspended.** It cannot be selected or run in the UI; the standalone app build uses V3.
   - Dedicated VCF (Victory of Continuous Four) and VCT (Victory of Continuous Threat) solvers for discovering forced wins during play.
 - 📊 **Deep Position Analysis:**
   - Live evaluation bar and candidate move suggestions.
@@ -37,7 +36,7 @@
 - 🔒 **100% Client-Side & Private:**
   - Runs entirely inside the browser using Vanilla JavaScript and Web Workers.
   - No Firebase/backend, accounts, or data tracking is required. Match statistics, settings, and generated puzzles are saved in browser `localStorage`.
-- 🧪 **Fully Tested:** 735 automated tests across 7 suites — all passing.
+- 🧪 **Regression Coverage:** The current UI suite passes 432 checks; see [Test Suite](#test-suite) for verified results and the separate PRO-suite caveat.
 
 ---
 
@@ -55,18 +54,18 @@ You can play immediately in any web browser without installation:
 | Engine | Source | Description |
 |---|---|---|
 | **XO5 Forge V3** | `engine3.js` + `worker3.js` | Original engine: Alpha-Beta minimax with iterative deepening, transposition table (Zobrist hashing), and VCF/VCT forcing solvers. |
-| **XO5 Forge V3 PRO** | `engine3pro.js` + `worker3pro.js` | **Default engine** in the UI. Built on the V3 architecture with enhanced search (PVS, aspiration windows, history/counter-move heuristics), an improved generational transposition table, advanced threat classification, and a `tacticalVerify` pass that validates each candidate move before it is finalized. |
+| **XO5 Forge V3 PRO** | `engine3pro.js` + `worker3pro.js` | Support is temporarily suspended. Source remains available for offline benchmarks, but the UI build does not bundle it and it cannot be selected for gameplay, analysis, or puzzles. |
 
-The UI ships **V3 PRO as the default engine**. The selection is **persisted in `localStorage`**
-(`xo5.selectedEngine3`) and **locked at game-start** — once a game begins, the engine in use
-cannot be switched silently mid-game. Players may freely choose V3 from the engine selector on
-the game-setup screen; V4 and V4 PRO remain coming-soon.
+The UI defaults to **V3**. Engine selection is persisted in `localStorage`
+(`xo5.selectedEngine3`) and locked at game start. A previously saved V3 PRO selection is reset
+to V3. V4 and V4 PRO remain coming soon.
 
 ---
 
 ## 📊 Benchmark & Self-Play
 
-V3 and V3 PRO are evaluated through a paired comparison suite and a self-play match series.
+The comparisons below are historical development benchmarks; they do not indicate that V3 PRO is
+currently available in the UI.
 
 ### Position Benchmark (500 ms / move)
 
@@ -123,15 +122,15 @@ Full benchmark data: `benchmark_v3_vs_v3pro.json`, `benchmark_v3_vs_v3pro_curves
 
 ## 🧪 Test Suite
 
-The project is covered by **735 automated tests, all passing**, across 5 active test suites (legacy v1/v2 suites also maintained):
+**Verified on 2026-10-06:** 641 checks pass across the four passing suites below. The separate V3 PRO engine suite currently does not complete successfully; details are listed in its row.
 
 | Suite | File | Tests | Scope |
 |---|---|---|---|
-| Engine regression — V3 | `test_engine3.js` | 148 | Win detection, tactics, TT, VF/VCT, mate proof-gating, evaluation, 9-level ladder |
-| Engine regression — V3 PRO | `test_engine3pro.js` | 92 | PRO-exclusive APIs: PVS stats, aspiration windows, threat classification, tacticalVerify |
-| Tactical correctness | `test_tactical_correctness.js` | 31 | VCF/VCT, forks, win/block detection, tacticalVerify — runs against **both** engines |
-| UI / integration | `test_ui3.js` | 434 | Engine registry, locking, persistence, puzzle generation, analysis, engine badge UI |
-| Smoke | `test_smoke3.js` | 30 | End-to-end gameplay, routing, themes, mobile layout |
+| Engine regression — V3 | `test_engine3.js` | 148 passing | Win detection, tactics, TT, VCF/VCT, evaluation, 9-level ladder |
+| Engine regression — V3 PRO | `test_engine3pro.js` | Not passing | Current run fails version/open-three assertions, then stops because `tt.set` is not a function. PRO is not bundled in the UI. |
+| Tactical correctness | `test_tactical_correctness.js` | 31 passing | VCF/VCT, forks, win/block detection, tacticalVerify — runs against both engines |
+| UI / integration | `test_ui3.js` | 432 passing | Engine suspension and selection, V3-only runtime, persistence, puzzles, and analysis |
+| Smoke | `test_smoke3.js` | 30 passing | End-to-end gameplay, routing, themes, mobile layout |
 | Engine v2 | `test_engine2.js` | _(legacy)_ | Previous generation |
 | Engine v1 | `test_engine.js` | _(legacy)_ | Original baseline |
 
@@ -160,7 +159,7 @@ Run any suite with `node <test-file>.js`.
 - **Frontend:** HTML5, Modern CSS (Design Tokens, Flexbox/Grid, Dark/Light theme), Vanilla JavaScript.
 - **Engines:**
   - **XO5 Forge V3** — Alpha-Beta minimax with iterative deepening and Web Worker concurrency (`engine3.js`, `worker3.js`).
-  - **XO5 Forge V3 PRO** — PVS/NegaScout search with aspiration windows, generational transposition table, advanced threat analysis, and `tacticalVerify` (`engine3pro.js`, `worker3pro.js`).
+  - **XO5 Forge V3 PRO** — source and worker remain for offline benchmarks; they are not included in the UI artifact while support is suspended.
 - **Build:** Simple build script bundling engine, worker, and app logic into a standalone single-file `index.html`.
 
 ### Puzzle workflow
@@ -192,7 +191,7 @@ open index.html
 
 ### Rebuilding the Standalone Bundle
 
-If you edit modular source files (`shell3.html`, `app3.js`, `engine3pro.js`, `engine3.js`, `worker3pro.js`, `worker3.js`), compile them into `index.html`:
+If you edit UI source files (`shell3.html`, `app3.js`, `engine3.js`, `worker3.js`, or `puzzles.json`), compile them into `index.html`. The build intentionally excludes `engine3pro.js` and `worker3pro.js`:
 
 ```bash
 node build3.js
@@ -202,9 +201,9 @@ node build3.js
 
 ```bash
 node test_engine3.js          # V3 engine regression (148 tests)
-node test_engine3pro.js       # V3 PRO engine regression (92 tests)
+node test_engine3pro.js       # V3 PRO diagnostics (currently fails; see Test Suite)
 node test_tactical_correctness.js  # Tactical correctness (31 tests)
-node test_ui3.js              # UI + integration (434 tests)
+node test_ui3.js              # UI + integration (432 checks)
 node test_smoke3.js           # End-to-end smoke (30 tests)
 ```
 

@@ -1297,9 +1297,13 @@ body.puzzle-mode .cell.heat,body.puzzle-mode .cell.thr,body.puzzle-mode .cell.hi
   border-color:color-mix(in srgb,var(--ok) 30%,transparent)}
 .engine-status-coming-soon{color:var(--text-3);background:var(--card-2);
   border-color:var(--line)}
+.engine-status-suspended{color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,var(--card));
+  border-color:color-mix(in srgb,var(--warn) 30%,transparent)}
 .engine-status-icon{width:5px;height:5px;border-radius:50%;flex:none}
 .engine-status-available .engine-status-icon{background:var(--ok)}
 .engine-status-coming-soon .engine-status-icon{background:var(--text-3)}
+.engine-status-suspended .engine-status-icon{background:var(--warn)}
+.sec-desc-suspended{color:var(--warn)}
 .engine-badge-logo{
   width:20px;height:20px;object-fit:contain;vertical-align:middle;margin-right:6px;
   border-radius:4px
@@ -1418,6 +1422,13 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
     <button class="devnotice-dismiss" id="devDismiss" type="button" aria-label="Dismiss development notice">Dismiss</button>
   </div>
 
+  <div class="devnotice" role="status" aria-live="polite">
+    <span class="devnotice-text">
+      <span class="dn-badge">V3 PRO support suspended</span>
+      <span>V3 PRO is temporarily unavailable. Game, analysis and puzzle engine features currently use XO5 Forge V3.</span>
+    </span>
+  </div>
+
   <!-- Runtime error bar (hidden by default, shown only on JS errors) -->
   <div id="errBar" class="errbar" hidden><span id="errText"></span><button class="btn sm" id="errClose" aria-label="Dismiss error">Dismiss</button></div>
 
@@ -1425,22 +1436,22 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
   <section class="view" id="viewHome" aria-label="Home">
 
     <!-- ======================= V3 PRO HERO BANNER ======================= -->
-    <section class="v3pro-hero" id="v3ProHero" aria-label="XO5 Forge V3 PRO Promotion">
+    <section class="v3pro-hero" id="v3ProHero" aria-label="XO5 Forge V3 PRO support status">
       <div class="v3pro-hero-glow" aria-hidden="true"></div>
       <div class="v3pro-hero-glow blue" aria-hidden="true"></div>
       <div class="v3pro-hero-inner">
         <div class="v3pro-hero-badge-row">
-          <span class="v3pro-pill current"><span class="v3pro-dot current"></span>Current Generation</span>
-          <span class="v3pro-pill available"><span class="v3pro-dot available"></span>Available</span>
+          <span class="v3pro-pill current" style="background:var(--warn);color:var(--ink-text)"><span class="v3pro-dot current"></span>Support Suspended</span>
+          <span class="v3pro-pill available" style="background:var(--card-2);color:var(--text-3)"><span class="v3pro-dot available"></span>Unavailable</span>
         </div>
         <div class="v3pro-hero-brand">
           <img src="assets/forge-v3-pro.png" alt="XO5 Forge V3 PRO" class="v3pro-hero-logo" onerror="this.style.display='none'">
           <div class="v3pro-hero-titles">
-            <p class="v3pro-eyebrow">THE NEW GENERATION OF THE XO5 ENGINE</p>
+            <p class="v3pro-eyebrow">ENGINE SUPPORT STATUS</p>
             <h2 class="v3pro-title">XO5 FORGE V3 PRO</h2>
           </div>
         </div>
-        <div class="v3pro-feature-pills">
+        <div class="v3pro-feature-pills" style="display:none;">
           <span>PVS Search</span>
           <span>&bull;</span>
           <span>Aspiration Windows</span>
@@ -1452,11 +1463,11 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
           <span>Enhanced Transposition Tables</span>
         </div>
         <p class="v3pro-hero-desc">
-          Engineered for deeper tactical perception and search efficiency. Features Principal Variation Search, multi-generational transposition tables, history heuristics, and solver-grade VCF/VCT threat detection.
+          <strong style="color:var(--warn);">V3 PRO support is temporarily suspended.</strong> It cannot be selected or used in the interface. All game, analysis and puzzle engine features use XO5 Forge V3.
         </p>
         <div class="v3pro-hero-actions">
-          <button class="btn big onink v3pro-play-cta" id="heroPlayV3ProBtn">
-            <span class="cta-icon">&#9654;</span> PLAY WITH V3 PRO
+          <button class="btn big onink v3pro-play-cta" id="heroPlayV3ProBtn" disabled aria-disabled="true" style="opacity:0.5;cursor:not-allowed;">
+            V3 PRO SUPPORT SUSPENDED
           </button>
           <button class="btn big outline-ink v3pro-explore-cta" id="heroExploreBtn">
             EXPLORE ENGINE &darr;
@@ -1464,7 +1475,7 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
         </div>
 
         <!-- 8-Card Feature Highlights Grid -->
-        <div class="v3pro-feature-grid" id="v3ProFeatureGrid">
+        <div class="v3pro-feature-grid" id="v3ProFeatureGrid" style="display:none;">
           <div class="v3pro-feat-card">
             <div class="v3pro-feat-head">
               <span class="v3pro-feat-num">01</span>
@@ -1574,16 +1585,16 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
         <p>The tactical engine family powering XO5.</p>
       </div>
       <div class="forge-grid">
-        <!-- V3 PRO — Current Generation (first / most prominent) -->
-        <div class="forge-card forge-card-current">
+        <!-- V3 PRO — Support Suspended -->
+        <div class="forge-card forge-card-disabled">
           <div class="forge-card-inner">
             <div class="forge-logo">
               <img src="assets/forge-v3-pro.png" alt="XO5 Forge V3 PRO logo" class="forge-logo-img" onerror="this.style.display='none'">
             </div>
             <div class="forge-content">
               <h4 class="forge-name">XO5 Forge V3 PRO</h4>
-              <p class="forge-desc">The current engine powering XO5. Built on the V3 architecture and upgraded with stronger search, tactical analysis, and verification.</p>
-              <ul class="forge-features-list">
+              <p class="forge-desc"><strong style="color:var(--warn);">V3 PRO support is temporarily suspended.</strong> This engine cannot be selected or used. XO5 Forge V3 is active for all engine features.</p>
+              <ul class="forge-features-list" style="display:none;">
                 <li>Advanced PVS Search</li>
                 <li>Aspiration Windows</li>
                 <li>Improved Transposition Table</li>
@@ -1591,26 +1602,22 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
                 <li>Advanced Threat Analysis</li>
                 <li>Stronger VCF/VCT &amp; Tactical Verification</li>
               </ul>
-              <div class="forge-status forge-status-current">
+              <div class="forge-status forge-status-unavailable">
                 <span class="forge-status-dot"></span>
-                <span>Current Generation</span>
-              </div>
-              <div class="forge-status forge-status-available">
-                <span class="forge-status-dot"></span>
-                <span>Available</span>
+                <span>Support Suspended</span>
               </div>
             </div>
           </div>
         </div>
-        <!-- V3 — Previous Generation -->
-        <div class="forge-card forge-card-prev">
+        <!-- V3 — Current Engine -->
+        <div class="forge-card forge-card-current">
           <div class="forge-card-inner">
             <div class="forge-logo">
               <img src="assets/forge-v3.png" alt="XO5 Forge V3 logo" class="forge-logo-img" onerror="this.style.display='none'">
             </div>
             <div class="forge-content">
               <h4 class="forge-name">XO5 Forge V3</h4>
-              <p class="forge-desc">Stable previous-generation engine. Reliable alpha-beta search with iterative deepening, VCF/VCT tactical solver, and full analysis support.</p>
+              <p class="forge-desc">The active engine for all XO5 game, analysis and puzzle features. Reliable alpha-beta search with iterative deepening, VCF/VCT tactical solver, and full analysis support.</p>
               <ul class="forge-features-list">
                 <li>Alpha-Beta Search</li>
                 <li>Iterative Deepening</li>
@@ -1618,9 +1625,13 @@ textarea.io{width:100%;min-height:150px;border-radius:11px;border:1px solid var(
                 <li>VCF/VCT Solver</li>
                 <li>Threat Analysis</li>
               </ul>
+              <div class="forge-status forge-status-current">
+                <span class="forge-status-dot"></span>
+                <span>Current Engine</span>
+              </div>
               <div class="forge-status forge-status-available">
                 <span class="forge-status-dot"></span>
-                <span>Previous Generation &middot; Available</span>
+                <span>Available</span>
               </div>
             </div>
           </div>

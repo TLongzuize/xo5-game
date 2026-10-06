@@ -1,5 +1,5 @@
 /* build3.js — assembles the CURRENT single-file artifact.
-   engine3.js + engine3pro.js + worker3.js + worker3pro.js + app3.js + shell3.html + puzzles.json -> index.html
+  engine3.js + worker3.js + app3.js + shell3.html + puzzles.json -> index.html
    (build.js is the superseded v2 build: engine2 + app2 + shell2 -> xo5-analysis.html) */
 const fs = require('fs');
 const path = require('path');
@@ -8,9 +8,7 @@ const read = f => fs.readFileSync(path.join(dir, f), 'utf8');
 
 let shell = read('shell3.html');
 const engine = read('engine3.js');
-const enginePro = read('engine3pro.js');
 const worker = read('worker3.js');
-const workerPro = read('worker3pro.js');
 const app = read('app3.js');
 const puz = read('puzzles.json');
 
@@ -19,8 +17,8 @@ function inject(hay, needle, payload) {
   return hay.replace(needle, () => payload);
 }
 
-shell = inject(shell, '/* ENGINE_PLACEHOLDER */', engine + '\n' + enginePro);
-shell = inject(shell, '/* WORKER_PLACEHOLDER */', worker + '\n' + workerPro);
+shell = inject(shell, '/* ENGINE_PLACEHOLDER */', engine);
+shell = inject(shell, '/* WORKER_PLACEHOLDER */', worker);
 shell = inject(shell, '/* APP_PLACEHOLDER */', app);
 shell = inject(shell,
   '<script id="puzzleSrc" type="application/json">[]</script>',
